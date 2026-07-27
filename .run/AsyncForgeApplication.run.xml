@@ -3,7 +3,7 @@
     <option name="ALTERNATIVE_JRE_PATH" value="temurin-17" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <module name="backend" />
-    <option name="SPRING_BOOT_MAIN_CLASS" value="com.phrolova.AsyncForgeApplication" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.phrolova.asyncforge.AsyncForgeApplication" />
     <option name="WORKING_DIRECTORY" value="file://$MODULE_DIR$" />
     <method v="2">
       <option name="Make" enabled="true" />

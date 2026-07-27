@@ -23,6 +23,13 @@
 hs_err_pid*
 replay_pid*
 
+# IDEs
 .idea
 .cursorj
 .vscode
+
+# 环境变量
+deploy/docker-compose.yml
+deploy/.env
+
+PRIVATE/
