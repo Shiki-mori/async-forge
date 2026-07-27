@@ -4,3 +4,49 @@ server:
 spring:
   application:
     name: async-forge
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:async_forge}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 1
+        default-requeue-rejected: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+
+async-forge:
+  jwt:
+    secret: ${JWT_SECRET:change-me-use-at-least-32-characters-long}
+    expiration-ms: 86400000
+  task:
+    max-retry: 3
+  mq:
+    exchange: task.exchange
+    queue: task.execute.q
+    routing-key: task.execute
+    dlx-exchange: task.dlx
+    dlq: task.execute.dlq
+    dlq-routing-key: task.execute.dlq
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.phrolova.asyncforge: INFO
