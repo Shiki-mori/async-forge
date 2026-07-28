@@ -21,6 +21,8 @@ cp docker-compose.yml.example docker-compose.yml
 docker compose up -d
 ```
 
+> **注意：** compose 使用独立项目名 `async-forge` 与独立网络，避免与同目录下其他项目（如 vitaelens）的 MySQL 服务名冲突。若本机已有其他 compose 占用了 `deploy` 项目名，请勿混用同一网络。
+
 MySQL 会自动执行 `database/sql/schema.sql` 初始化表结构。
 
 ### 2. 启动后端

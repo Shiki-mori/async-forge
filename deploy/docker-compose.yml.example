@@ -1,3 +1,5 @@
+name: async-forge
+
 services:
   mysql:
     image: mysql:8.0
@@ -18,6 +20,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - async-forge
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -36,7 +40,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - async-forge
 
 volumes:
   mysql_data:
   rabbitmq_data:
+
+networks:
+  async-forge:
+    driver: bridge
