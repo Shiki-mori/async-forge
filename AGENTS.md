@@ -23,7 +23,7 @@ async-forge
 - Spring Security + JWT
 - MyBatis-Plus
 - MySQL 8
-- RabbitMQ（必须；不要用 `@Async` 代替 MQ）
+- RabbitMQ
 - Redis（可选：限流、幂等 Key）
 - springDoc OpenAPI
 - Docker Compose
@@ -101,7 +101,7 @@ DEAD      -- 重试耗尽，进入死信后的终态
   → 失败 →（超过最大重试）DEAD
 ```
 
-`FAILED` 与 `DEAD` 的语义在实现中必须写清，并在 README / 面试口述一致。
+`FAILED` 与 `DEAD` 的语义在实现中必须写清，并在 README 口述一致。
 
 ### 任务类型（P0）
 
