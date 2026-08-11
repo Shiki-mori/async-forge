@@ -33,8 +33,14 @@ public class TaskServiceImpl implements TaskService {
     private final TaskProperties taskProperties;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 创建任务
+     * @param request 创建任务请求
+     * @return 任务响应
+     */
     @Override
-    @Transactional
+    @Transactional // 该方法需要在数据库事务中执行
+    // Spring 会自动开启一个数据库事务，并在事务提交后执行 afterCommit 方法
     public TaskResponse createTask(CreateTaskRequest request) {
         validateTaskType(request.getTaskType());
 
@@ -47,22 +53,40 @@ public class TaskServiceImpl implements TaskService {
         task.setMaxRetry(taskProperties.getMaxRetry());
         taskMapper.insert(task);
 
+        // 若insert之后，commit之前抛出异常，则事务回滚，不会执行afterCommit，task记录不会入库
+
         Long taskId = task.getId();
+
+        // TransactionSynchronizationManager Spring提供的事务同步工具
+        // 在当前活跃事务中注册事务同步回调，在事务生命周期的特定时点执行
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            // 数据库事务提交后，才发布消息到RabbitMQ
             public void afterCommit() {
                 taskProducer.publish(taskId);
             }
         });
+
+        // 立即返回taskId，HTTP不等待执行完成
+        // Spring 随后提交事务，并调用 afterCommit 方法
         return toResponse(task);
     }
 
+    /**
+     * 获取任务详情
+     * @param taskId 任务ID
+     * @return 任务详情
+     */
     @Override
     public TaskResponse getTask(Long taskId) {
         Task task = requireOwnedTask(taskId);
         return toResponse(task);
     }
 
+    /**
+     * 获取当前用户任务列表
+     * @return 任务列表
+     */
     @Override
     public List<TaskResponse> listTasks() {
         List<Task> tasks = taskMapper.selectList(new LambdaQueryWrapper<Task>()
@@ -71,6 +95,12 @@ public class TaskServiceImpl implements TaskService {
         return tasks.stream().map(this::toResponse).toList();
     }
 
+    /**
+     * 检查任务是否属于当前用户
+     * @param taskId 任务ID
+     * @return 任务
+     * @throws BusinessException 如果任务不存在或不属于当前用户
+     */
     private Task requireOwnedTask(Long taskId) {
         Task task = taskMapper.selectById(taskId);
         if (task == null || !task.getUserId().equals(UserContext.getUserId())) {
@@ -79,6 +109,11 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
+    /**
+     * 验证任务类型是否支持
+     * @param taskType 任务类型
+     * @throws BusinessException 如果任务类型不支持
+     */
     private void validateTaskType(String taskType) {
         boolean supported = Arrays.stream(TaskType.values())
                 .anyMatch(type -> type.name().equals(taskType));
@@ -87,6 +122,12 @@ public class TaskServiceImpl implements TaskService {
         }
     }
 
+    /**
+     * 将对象转换为JSON字符串
+     * @param payload 对象
+     * @return JSON字符串
+     * @throws JsonProcessingException 如果转换失败
+     */
     private String toJson(Object payload) {
         try {
             return objectMapper.writeValueAsString(payload);
@@ -95,6 +136,11 @@ public class TaskServiceImpl implements TaskService {
         }
     }
 
+    /**
+     * 将任务转换为任务响应
+     * @param task 任务
+     * @return 任务响应
+     */
     private TaskResponse toResponse(Task task) {
         return TaskResponse.builder()
                 .id(task.getId())
@@ -110,6 +156,12 @@ public class TaskServiceImpl implements TaskService {
                 .build();
     }
 
+    /**
+     * 将JSON字符串转换为对象
+     * @param json JSON字符串
+     * @return 对象
+     * @throws JsonProcessingException 如果转换失败
+     */
     private Object parseJson(String json) {
         if (json == null || json.isBlank()) {
             return null;

@@ -22,16 +22,30 @@ public class TaskController {
 
     private final TaskService taskService;
 
+    /**
+     * 创建任务
+     * @param request 创建任务请求
+     * @return 任务响应
+     */
     @PostMapping
     public Result<TaskResponse> createTask(@Valid @RequestBody CreateTaskRequest request) {
         return Result.success(taskService.createTask(request));
     }
 
+    /**
+     * 获取当前用户任务列表
+     * @return 任务列表
+     */
     @GetMapping
     public Result<List<TaskResponse>> listTasks() {
         return Result.success(taskService.listTasks());
     }
 
+    /**
+     * 获取任务详情
+     * @param id 任务ID
+     * @return 任务详情
+     */
     @GetMapping("/{id}")
     public Result<TaskResponse> getTask(@PathVariable Long id) {
         return Result.success(taskService.getTask(id));
