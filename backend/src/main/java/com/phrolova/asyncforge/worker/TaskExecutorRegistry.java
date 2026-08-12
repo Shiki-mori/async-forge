@@ -16,7 +16,9 @@ public class TaskExecutorRegistry {
 
     private final Map<String, TaskExecutor> executors;
 
-    // 构造函数，将任务执行器列表转换为Map，键为任务类型，值为任务执行器对象
+    // 构造函数，收集所有任务执行器
+    // 将任务执行器列表转换为Map，键为任务类型，值为任务执行器对象
+    // 后续新增任务类型仅需添加一个 @Component 实现类
     public TaskExecutorRegistry(List<TaskExecutor> executorList) {
         this.executors = executorList.stream()
                 .collect(Collectors.toMap(TaskExecutor::taskType, Function.identity()));
