@@ -9,6 +9,12 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface TaskMapper extends BaseMapper<Task> {
 
+    /*
+    DB层幂等
+    仅当任务状态为PENDING或FAILED时，才更新状态为RUNNING
+    更改成功，返回1，表示获取到任务执行权
+    更改失败，返回0，表示任务状态不符合条件或已被其他消费者获取
+    */
     @Update("""
             UPDATE task
             SET status = #{toStatus}, updated_at = NOW()
