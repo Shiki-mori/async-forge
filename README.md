@@ -12,31 +12,48 @@
 
 ## 快速启动
 
-### 1. 启动中间件
+### Docker 一键启动（推荐）
 
 ```bash
 cd deploy
 cp .env.example .env
 cp docker-compose.yml.example docker-compose.yml
-docker compose up -d
+docker compose up -d --build
 ```
 
-> **注意：** compose 使用独立项目名 `async-forge` 与独立网络，避免与同目录下其他项目（如 vitaelens）的 MySQL 服务名冲突。若本机已有其他 compose 占用了 `deploy` 项目名，请勿混用同一网络。
+会启动 MySQL、RabbitMQ、后端、前端。MySQL 首次启动时自动执行 `database/sql/schema.sql`。
 
-MySQL 会自动执行 `database/sql/schema.sql` 初始化表结构。
+| 服务 | 默认地址 |
+|------|----------|
+| 前端控制台 | http://localhost:5173 |
+| 后端 API / Swagger | http://localhost:8090 、`/swagger-ui.html` |
+| RabbitMQ 管理台 | http://localhost:15672 （guest/guest） |
 
-### 2. 启动后端
+前端 Nginx 会把 `/api` 反代到后端容器，浏览器只需访问前端端口。
+
+> **注意：** compose 使用独立项目名 `async-forge` 与独立网络，避免与同目录下其他项目冲突。宿主机端口可在 `.env` 中修改（如本机 3306 被占用可改 `MYSQL_PORT`）。
+
+停止：
 
 ```bash
-cd backend
-export MYSQL_HOST=localhost MYSQL_USER=root MYSQL_PASSWORD=root
-export RABBITMQ_HOST=localhost JWT_SECRET=change-me-use-at-least-32-characters-long
-mvn spring-boot:run
+cd deploy && docker compose down
 ```
 
-服务默认端口：`8090`  
-Swagger UI：`http://localhost:8090/swagger-ui.html`
+### 本地调试（可选）
 
+仅起中间件，后端 / 前端在宿主机跑：
+
+```bash
+cd deploy && docker compose up -d mysql rabbitmq
+
+# 后端
+cd backend
+set -a && source ../deploy/.env && set +a
+mvn spring-boot:run
+
+# 前端（Vite 将 /api 代理到 localhost:8090）
+cd frontend && npm run dev
+```
 ## 演示流程
 
 ### 注册并登录

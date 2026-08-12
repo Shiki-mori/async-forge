@@ -43,6 +43,49 @@ services:
     networks:
       - async-forge
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: async-forge-backend:local
+    container_name: async-forge-backend
+    restart: unless-stopped
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-async_forge}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET:-change-me-use-at-least-32-characters-long}
+      TZ: Asia/Shanghai
+    ports:
+      - "${BACKEND_PORT:-8090}:8090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - async-forge
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: async-forge-frontend:local
+    container_name: async-forge-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend
+    networks:
+      - async-forge
+
 volumes:
   mysql_data:
   rabbitmq_data:
