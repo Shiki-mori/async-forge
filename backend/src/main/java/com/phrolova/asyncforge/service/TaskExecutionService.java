@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -82,13 +80,7 @@ public class TaskExecutionService {
             // 如果重试次数未达到最大重试次数，则将任务状态设置为PENDING
             update.setStatus(TaskStatus.PENDING.name());
             taskMapper.updateById(update);
-            Long taskId = task.getId();
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    taskProducer.publish(taskId);
-                }
-            });
+            taskProducer.publishAfterCommit(task.getId());
             log.info("Task failed and scheduled for retry, taskId={}, retryCount={}", task.getId(), nextRetryCount);
         }
     }

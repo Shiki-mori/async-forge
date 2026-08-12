@@ -18,8 +18,6 @@ import com.phrolova.asyncforge.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Arrays;
 import java.util.List;
@@ -53,22 +51,9 @@ public class TaskServiceImpl implements TaskService {
         task.setMaxRetry(taskProperties.getMaxRetry());
         taskMapper.insert(task);
 
-        // 若insert之后，commit之前抛出异常，则事务回滚，不会执行afterCommit，task记录不会入库
-
-        Long taskId = task.getId();
-
-        // TransactionSynchronizationManager Spring提供的事务同步工具
-        // 在当前活跃事务中注册事务同步回调，在事务生命周期的特定时点执行
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            // 数据库事务提交后，才发布消息到RabbitMQ
-            public void afterCommit() {
-                taskProducer.publish(taskId);
-            }
-        });
-
         // 立即返回taskId，HTTP不等待执行完成
         // Spring 随后提交事务，并调用 afterCommit 方法
+        taskProducer.publishAfterCommit(task.getId());
         return toResponse(task);
     }
 
