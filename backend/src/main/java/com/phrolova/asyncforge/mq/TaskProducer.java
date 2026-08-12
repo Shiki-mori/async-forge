@@ -16,6 +16,12 @@ public class TaskProducer {
 
     public void publish(Long taskId) {
         TaskMessage message = new TaskMessage(taskId);
+        /*
+        convertAndSend: 将message对象转换为JSON格式，并发送消息到RabbitMQ
+        mqProperties.getExchange(): 交换机名称
+        mqProperties.getRoutingKey(): 路由键
+        message: 消息内容
+        */
         rabbitTemplate.convertAndSend(
                 mqProperties.getExchange(),
                 mqProperties.getRoutingKey(),
