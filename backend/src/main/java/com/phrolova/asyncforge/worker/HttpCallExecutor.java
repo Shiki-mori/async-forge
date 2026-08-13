@@ -50,6 +50,7 @@ public class HttpCallExecutor implements TaskExecutor {
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
         String bodySnippet = truncate(response.body());
 
         return objectMapper.createObjectNode()
@@ -58,23 +59,40 @@ public class HttpCallExecutor implements TaskExecutor {
                 .toString();
     }
 
+    /**
+     * URL安全限制，防SSRF攻击
+     * @param url
+     * @throws Exception
+     */
     private void validateUrl(String url) throws Exception {
+        // 将URL转换为URI对象
         URI uri = URI.create(url);
+
+        // 获取URL的协议
         String scheme = uri.getScheme();
+        // 若协议不是http或https，则抛出异常
         if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
             throw new BusinessException(ErrorCode.HTTP_CALL_BLOCKED, "only http/https is allowed");
         }
 
+        // 获取URL的主机名
         String host = uri.getHost();
+        // 若主机名为空，则抛出异常
         if (host == null || host.isBlank()) {
             throw new BusinessException(ErrorCode.HTTP_CALL_BLOCKED, "invalid host");
         }
 
+        // 若主机名为私有或本地地址，则抛出异常
         if (isBlockedHost(host)) {
             throw new BusinessException(ErrorCode.HTTP_CALL_BLOCKED, "private or local addresses are blocked");
         }
     }
 
+    /**
+     * 判断主机名是否为私有或本地地址
+     * @param host
+     * @throws Exception
+     */
     private boolean isBlockedHost(String host) throws Exception {
         String lowerHost = host.toLowerCase();
         if ("localhost".equals(lowerHost) || lowerHost.endsWith(".local")) {
@@ -88,6 +106,11 @@ public class HttpCallExecutor implements TaskExecutor {
                 || address.isSiteLocalAddress();
     }
 
+    /**
+     * 截取响应体的前MAX_BODY_LENGTH=1024个字符
+     * @param body
+     * @return 截取后的响应体
+     */
     private String truncate(String body) {
         if (body == null) {
             return "";

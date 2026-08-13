@@ -142,7 +142,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     /**
-     * 将JSON字符串转换为对象
+     * 将JSON字符串反序列化为对象
      * @param json JSON字符串
      * @return 对象
      * @throws JsonProcessingException 如果转换失败

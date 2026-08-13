@@ -22,6 +22,15 @@ public class DlqListener {
     private final TaskMapper taskMapper;
 
     @RabbitListener(queues = "${async-forge.mq.dlq}")
+    /**
+     * 处理死信队列消息
+     * 进入DLQ的消息不再重试执行，仅负责把任务收成终态DEAD，并确认死信消息
+     * @param message 消息
+     * @param rawMessage 原始消息
+     * @param channel 通道
+     * @param deliveryTag 交付标签
+     * @throws IOException 输入输出异常
+     */
     public void onDeadLetter(TaskMessage message,
                              Message rawMessage,
                              Channel channel,
@@ -30,6 +39,7 @@ public class DlqListener {
         log.warn("Task entered DLQ, taskId={}", taskId);
 
         Task task = taskMapper.selectById(taskId);
+        // 如果任务存在且状态不为DEAD，则更新任务状态为DEAD
         if (task != null && !TaskStatus.DEAD.name().equals(task.getStatus())) {
             Task update = new Task();
             update.setId(taskId);
@@ -38,6 +48,7 @@ public class DlqListener {
             taskMapper.updateById(update);
         }
 
+        // 确认消息
         channel.basicAck(deliveryTag, false);
     }
 }
