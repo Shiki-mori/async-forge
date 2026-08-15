@@ -1,0 +1,13 @@
+---
+description: Vue 控制台只增量 AGENT_TASK 表单，禁止聊天 UI 与直连 Agent
+globs: frontend/**/*.{ts,vue}
+alwaysApply: false
+---
+
+# 前端控制台
+
+- `frontend/src/types.ts` 的 `TaskType` 增加 `'AGENT_TASK'`。
+- `ConsoleView.vue` 沿用现有 `v-if` 分支：下拉增加 `AGENT_TASK`；多行 `instruction`（默认 httpbin 示例）+ `forceFail` 复选框。payload 为 `{ instruction, forceFail }`。
+- 详情继续用现有 Payload / Result / Error 面板。不新页面、不对话 UI、不流式打字。
+- API 仍走 `/api/tasks`（`frontend/src/api/tasks.ts`）。禁止浏览器请求 `AGENT_BASE_URL`。
+- 不借机做前端美化或替换组件库。

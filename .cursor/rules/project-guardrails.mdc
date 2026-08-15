@@ -1,0 +1,17 @@
+---
+description: async-forge 全局红线：平台身份、P0 勿回退、Agent 边界、禁止扩 scope
+alwaysApply: true
+---
+
+# 项目红线
+
+- 校招**异步任务平台**：提交 → RabbitMQ → Worker → 可查 → 重试 / 死信。与 VitaeLens **互补**：禁止简历解析、JD 匹配、模拟面试、聊天机器人。
+- Agent 只是任务类型 `AGENT_TASK`（旧名 `AGENT_TOOL` 废弃），复用同一套状态机与 DLQ，不是新平台。
+- Java 管可靠性（鉴权、入库、MQ、抢占、重试、死信）；Python 管智能。禁止：Java 加 LLM SDK；Python 连 MySQL / RabbitMQ；前端直连 Agent。
+- 远程调用（A2A / HTTP）不得长时间占 DB 事务。未校验的模型原文不得当 SUCCESS。
+- 密钥不入库、不进 Git。日志不打 JWT 全文、密码、API Key。
+- 窄而硬：MCP 工具仅 2 个、LangGraph 3～5 节点、一种阻塞 A2A。禁止 Multi-Agent、向量库、长期记忆。
+- P0 已完成：JWT、任务 CRUD、手动 ACK、`claimForExecution`、`HTTP_CALL` / `DELAY_DEMO`、DLQ。禁止用 `@Async` / 线程池替换 MQ；禁止改写这两类任务的成功演示语义来接 Agent。
+- 明确不做：手动重试 HTTP、工作流引擎、Redis 限流、Kafka、K8s、改 `database/sql/schema.sql`、用 `HTTP_CALL` 打 Agent。
+- 偏离契约（A2A method / 端口）须先改对应 `.cursor/rules` 或 `.cursor/skills`，再改代码。
+- 工序：skill `implement-p2-agent`。执行器：`extend-task-executor`。A2A / MCP：`python-a2a-mcp`。

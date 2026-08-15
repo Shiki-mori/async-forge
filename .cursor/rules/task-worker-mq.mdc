@@ -1,0 +1,15 @@
+---
+description: 任务执行器注册表、状态机、拆事务、MQ/DLQ 与 AGENT_TASK Worker
+globs: backend/**/worker/**/*.java,backend/**/mq/**/*.java,backend/**/service/TaskExecutionService.java,backend/**/service/impl/TaskServiceImpl.java,backend/**/mapper/TaskMapper.java,backend/**/entity/TaskType.java,backend/**/entity/TaskStatus.java,backend/**/agent/**/*.java
+alwaysApply: false
+---
+
+# Worker / MQ
+
+- 勿改 `TaskExecutor` 接口语义（`taskType()` + `execute(Task)`）。新类型 = 新 `@Component` + `TaskType` 枚举，禁止巨型 switch。
+- 状态机：`PENDING → RUNNING → SUCCESS`；失败且未耗尽重试 → `PENDING` 再入队；耗尽 → `DEAD`。Agent 必须复用 `handleFailure`，禁止旁路。
+- **拆事务**：claim / 写 SUCCESS 或 DEAD 用短事务；`executor.execute()`（含 A2A）在事务外。`publishAfterCommit` 语义保留（写 PENDING 的事务提交后再投递）。
+- 不要改松 `claimForExecution`（仅 `PENDING` / `FAILED` → `RUNNING`）。
+- 手动 ACK / NACK 与队列名（`task.execute.q`、`task.execute.dlq`）不要顺便改；改 MQ 必须同步 README。Agent 仍是一条 `taskId` 消息。
+- `AgentTaskExecutor.taskType()` 返回 `"AGENT_TASK"`。`forceFail` 仍走 A2A，Java 不要直接 throw 绕过 Python。成功须校验非空 `summary` 且 `toolCalls` 为数组；执行器不更新任务状态。
+- 禁止把 Agent URL 交给 `HttpCallExecutor`（SSRF 会拦 Docker 名 `agent`）。不要用 `@Async` / 线程池替换 MQ。

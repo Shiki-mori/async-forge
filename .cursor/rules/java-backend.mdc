@@ -1,0 +1,15 @@
+---
+description: Java 后端分层、鉴权隔离、Result 约定、AGENT_TASK 创建校验
+globs: backend/**/*.java
+alwaysApply: false
+---
+
+# Java 后端
+
+- 包根 `com.phrolova.asyncforge`。在现有模块增量加类，不新起 Maven 模块。
+- Lombok `@RequiredArgsConstructor` 构造注入。Controller 只返回 `Result`，不返回 Entity。统一响应 `{ code, message, data }`，成功 `code = 0`。
+- 用户隔离：从 `UserContext.getUserId()` 取当前用户，禁止信任请求体 userId。详情对他人任务返回现有 `TASK_NOT_FOUND`。
+- 业务错误：`BusinessException(ErrorCode)`。未知 `taskType` → `TASK_TYPE_UNSUPPORTED`。
+- `AGENT_TASK` 创建时校验 `instruction`（trim 后非空，建议最长 2000）；`forceFail` 可选，默认 `false`。不要在 Java 里解析用户 URL。
+- Java `agent` 包只放 `AgentProperties` 与 `AgentA2aClient`。`pom.xml` 不加 LLM SDK。
+- 空包 `workflow/` 不要借机做引擎。业务逻辑不写在 Controller；Python 不建第二套用户体系。
