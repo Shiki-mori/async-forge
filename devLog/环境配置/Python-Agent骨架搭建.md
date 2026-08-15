@@ -1,6 +1,6 @@
 # Python Agent 骨架搭建（P2 步骤 A）
 
-本文记录 **为什么这样搭**、**每个文件做什么**、**请求怎么走**。启动命令以 [README.md](../../README.md) 为准；A2A 字段以 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 为准。
+本文记录 **为什么这样搭**、**每个文件做什么**、**请求怎么走**。启动命令以 [README.md](../../README.md) 为准；Docker 启停见 [Python-Agent-Docker.md](Python-Agent-Docker.md)；A2A 字段以 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 为准。
 
 ## 1. 这一步要解决什么
 
