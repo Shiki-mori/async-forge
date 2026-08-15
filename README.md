@@ -168,8 +168,11 @@ async-forge/
 ├── backend/          # Spring Boot 后端
 ├── database/sql/     # DDL
 ├── deploy/           # Docker Compose
+├── devLog/           # 搭建记录（含 Agent 骨架说明）
 └── frontend/         # Vue 控制台（P1，可选）
 ```
+
+Python Agent 骨架如何搭建、A2A 如何挂载、Compose 如何接入，见 [devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)。
 
 ## 环境变量
 

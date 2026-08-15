@@ -5,6 +5,7 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 ## 给人类
 
 - 启动、演示、环境变量：[README.md](README.md)
+- Python Agent 骨架搭建：[devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)
 - 表结构：[database/sql/schema.sql](database/sql/schema.sql)（P2 不改表）
 
 ## 给 Agent（事实来源）
