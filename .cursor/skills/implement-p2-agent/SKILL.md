@@ -1,6 +1,6 @@
 ---
 name: implement-p2-agent
-description: Orchestrates async-forge P2 AGENT_TASK delivery in order A→D (Python skeleton, Java worker, real LangGraph/MCP, console+README). Use when the user asks to implement P2, AGENT_TASK, F20–F29, the Python Agent Runtime, or to follow AGENTS.md delivery steps.
+description: Orchestrates async-forge P2 AGENT_TASK delivery in order A→D (Python skeleton, Java worker, real LangGraph/MCP, console+README). Use when the user asks to implement P2, AGENT_TASK, F20–F29, the Python Agent Runtime, or to follow P2 delivery steps A→D.
 ---
 
 # P2 AGENT_TASK 交付
