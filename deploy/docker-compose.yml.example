@@ -61,6 +61,8 @@ services:
       RABBITMQ_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
       JWT_SECRET: ${JWT_SECRET:-change-me-use-at-least-32-characters-long}
+      AGENT_BASE_URL: http://agent:8081
+      AGENT_TIMEOUT_SECONDS: ${AGENT_TIMEOUT_SECONDS:-60}
       TZ: Asia/Shanghai
     ports:
       - "${BACKEND_PORT:-8090}:8090"
@@ -69,6 +71,36 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      agent:
+        condition: service_healthy
+    networks:
+      - async-forge
+
+  agent:
+    build:
+      context: ../agent
+      dockerfile: Dockerfile
+    image: async-forge-agent:local
+    container_name: async-forge-agent
+    restart: unless-stopped
+    environment:
+      AGENT_JSONRPC_URL: http://agent:8081
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      TZ: Asia/Shanghai
+    ports:
+      - "${AGENT_PORT:-8081}:8081"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health')
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     networks:
       - async-forge
 

@@ -1,0 +1,19 @@
+[project]
+name = "async-forge-agent"
+version = "0.1.0"
+description = "async-forge Python Agent Runtime (A2A + FastAPI)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.2",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "a2a-sdk[http-server,fastapi]>=1.1.2,<2",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]

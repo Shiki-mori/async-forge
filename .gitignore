@@ -31,5 +31,12 @@ replay_pid*
 # 环境变量
 deploy/docker-compose.yml
 deploy/.env
+agent/.env
+
+# Python agent
+agent/.venv
+**/__pycache__/
+*.py[cod]
+*.egg-info/
 
 PRIVATE/

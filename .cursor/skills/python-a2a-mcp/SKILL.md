@@ -10,7 +10,7 @@ description: Implements the Python Agent Runtime: official a2a-sdk server, LangG
 ## 实现顺序
 
 1. Agent Card 可 `curl` 通 `GET /.well-known/agent-card.json`
-2. `forceFail=true` 的 `message/send` → A2A Task failed
+2. `forceFail=true` 的 JSON-RPC `SendMessage`（`POST /`，头 `A2A-Version: 1.0`）→ A2A Task failed
 3. `forceFail=false` 先返回固定成功 JSON（无 LLM），供 Java 联调
 4. MCP 实现 `http_get` + `calculator`（SSRF 与表达式白名单）
 5. LangGraph Function Calling 接到 MCP Client（如 `langchain-mcp-adapters`）

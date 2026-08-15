@@ -9,7 +9,11 @@ Python **必须**用官方 `a2a-sdk` 作为 A2A Server（JSON-RPC over HTTP）�
    - 描述：执行自然语言指令，可通过 MCP 工具访问受限 HTTP GET 与四则运算
    - skill：`run-instruction`
    - 标明 JSON-RPC 接口 URL（容器内 `http://agent:8081`）
-2. JSON-RPC `message/send`（若已安装 SDK 使用 `SendMessage` 且要求 `A2A-Version` 头，Java 客户端必须与 SDK 示例一致；以能对通 SDK 为准，并在 README 写明实际 method 名与头）
+2. JSON-RPC：`POST /`（与 Agent Card 中 JSON-RPC URL 相同；容器内 `http://agent:8081`）
+   - method：`SendMessage`（a2a-sdk 1.x / A2A 1.0；不是 v0.3 的 `message/send`）
+   - 请求头：必须带 `A2A-Version: 1.0`
+   - `Content-Type: application/json`
+   - Java 客户端必须与上述 SDK 信封一致；README 写明 method / 路径 / 头
 3. **阻塞一次调用**：Java Worker 同步等待最终 Task（不要在 P2 做 Java 侧轮询 + 流式）。超时默认 60 秒。
 4. 用户 Message 的文本 part 必须是 JSON 字符串（便于 Java/Python 对齐）：
 
