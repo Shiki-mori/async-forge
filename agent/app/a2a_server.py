@@ -33,11 +33,14 @@ from app.config import Settings
 from app.graph import ForceFailError, run_stub
 from app.schemas import AgentInstruction
 
+
+# 相当于Java中的`LoggerFactory.getLogger(A2aServer.class)`
 logger = logging.getLogger(__name__)
 
 _INSTRUCTION_LOG_LIMIT = 200
 
 
+# 截断文本，如果文本长度超过限制，则截断并添加省略号
 def _truncate(text: str, limit: int = _INSTRUCTION_LOG_LIMIT) -> str:
     collapsed = " ".join(text.split())
     if len(collapsed) <= limit:
@@ -80,6 +83,11 @@ class StubAgentExecutor(AgentExecutor):
     async def execute(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
+        """
+        context: 请求上下文（用户消息、任务ID等）
+        event_queue: 事件队列。SDK据此组装最终HTTP响应。
+        """
+
         task_id = context.task_id or ""
         context_id = context.context_id or ""
         user_message = context.message
@@ -87,6 +95,7 @@ class StubAgentExecutor(AgentExecutor):
 
         if user_message is not None:
             await event_queue.enqueue_event(
+            # 阻塞式 SendMessage 需要事件流中先有一个 Task
                 Task(
                     id=task_id,
                     context_id=context_id,
@@ -100,9 +109,11 @@ class StubAgentExecutor(AgentExecutor):
             task_id=task_id,
             context_id=context_id,
         )
+        # 启动任务，状态变为 working
         await updater.start_work()
 
         try:
+            # 将字符串转为dict，然后按DTO校验，转为AgentInstruction对象
             payload = AgentInstruction.model_validate(json.loads(raw_text))
         except (json.JSONDecodeError, ValueError) as exc:
             logger.warning(
@@ -118,6 +129,7 @@ class StubAgentExecutor(AgentExecutor):
             )
             return
 
+        # 记录日志
         logger.info(
             "agent stub taskId=%s instruction=%s forceFail=%s",
             payload.task_id if payload.task_id is not None else task_id,
@@ -133,8 +145,10 @@ class StubAgentExecutor(AgentExecutor):
             )
             return
 
+        # 将结果由dict转为JSON字符串
         result_json = json.dumps(result, ensure_ascii=False)
         await updater.add_artifact(
+            # 将JSON添加到Task
             parts=[Part(text=result_json)],
             name="result_json",
             last_chunk=True,
@@ -143,6 +157,7 @@ class StubAgentExecutor(AgentExecutor):
             message=updater.new_agent_message(parts=[Part(text=result_json)])
         )
 
+    # A2A协议要求必须实现cancel方法
     async def cancel(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
