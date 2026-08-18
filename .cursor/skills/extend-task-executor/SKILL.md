@@ -33,7 +33,7 @@ description: Extends async-forge with a new TaskType via TaskExecutor registry, 
    - 调 `AgentA2aClient`；超时抛错
    - 校验返回 JSON：非空 `summary` 且 `toolCalls` 为数组；通过则 `toString` 作为 `result_json`
    - **不**在此方法更新任务状态
-5. `AgentA2aClient`：拉 Card → 发 `message/send` → 超时默认 60s → 抽出 JSON。失败（含 A2A Task failed）视为 `execute()` 抛错。不要写业务摘要逻辑。
+5. `AgentA2aClient`：拉 Card → 发 `SendMessage`（A2A 1.0；不是 v0.3 的 `message/send`）→ 超时默认 60s → 抽出 JSON。失败（含 A2A Task failed）视为 `execute()` 抛错。不要写业务摘要逻辑。
 6. 配置：
 
 ```yaml

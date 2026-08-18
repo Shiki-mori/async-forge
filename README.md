@@ -97,7 +97,7 @@ curl -s -X POST http://localhost:8081/ \
   -d '{"jsonrpc":"2.0","id":"2","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-fail","parts":[{"text":"{\"taskId\":2,\"instruction\":\"任意内容\",\"forceFail\":true}"}]}}}'
 ```
 
-> **本步尚未接入 Java。** 控制台还不能提交 `AGENT_TASK`；`DELAY_DEMO` / `HTTP_CALL` 演示语义不变。Agent 成功 / 死信三条演示等到 P2 后续步骤。
+> Java Worker 已接入 `AGENT_TASK`（`POST /api/tasks` + curl 即可）。控制台表单与 README 三条完整演示是步骤 D。`DELAY_DEMO` / `HTTP_CALL` 演示语义不变。当前 Agent 成功体仍是步骤 A 的固定 stub（无 LLM）；步骤 C 才会换成真工具调用。
 
 ## 演示流程
 
@@ -144,6 +144,17 @@ curl -s -X POST http://localhost:8090/api/tasks \
   -H 'Content-Type: application/json' \
   -d '{"taskType":"HTTP_CALL","payload":{"url":"https://httpbin.org/get"}}'
 ```
+
+### 创建 AGENT_TASK（步骤 B：Java 经 A2A 调 Agent stub）
+
+```bash
+curl -s -X POST http://localhost:8090/api/tasks \
+  -H "Authorization: Bearer <token>" \
+  -H 'Content-Type: application/json' \
+  -d '{"taskType":"AGENT_TASK","payload":{"instruction":"hello","forceFail":false}}'
+```
+
+`forceFail: true` 会走 Agent 的 A2A failed，再经现有重试，最终 `DEAD`。空 `instruction` 创建返回业务码 `40000`。
 
 ## 任务状态流转
 

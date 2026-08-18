@@ -35,6 +35,9 @@ async-forge:
     expiration-ms: 86400000
   task:
     max-retry: 3
+  agent:
+    base-url: ${AGENT_BASE_URL:http://localhost:8081}
+    timeout-seconds: ${AGENT_TIMEOUT_SECONDS:60}
   mq:
     exchange: task.exchange
     queue: task.execute.q

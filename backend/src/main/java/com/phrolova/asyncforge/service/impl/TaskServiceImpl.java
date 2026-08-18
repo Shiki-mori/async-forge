@@ -2,6 +2,7 @@ package com.phrolova.asyncforge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phrolova.asyncforge.auth.UserContext;
 import com.phrolova.asyncforge.common.ErrorCode;
@@ -26,6 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
+    private static final int MAX_INSTRUCTION_LENGTH = 2000;
+
     private final TaskMapper taskMapper;
     private final TaskProducer taskProducer;
     private final TaskProperties taskProperties;
@@ -41,6 +44,9 @@ public class TaskServiceImpl implements TaskService {
     // Spring 会自动开启一个数据库事务，并在事务提交后执行 afterCommit 方法
     public TaskResponse createTask(CreateTaskRequest request) {
         validateTaskType(request.getTaskType());
+        if (TaskType.AGENT_TASK.name().equals(request.getTaskType())) {
+            validateAgentPayload(request.getPayload());
+        }
 
         Task task = new Task();
         task.setUserId(UserContext.getUserId());
@@ -104,6 +110,24 @@ public class TaskServiceImpl implements TaskService {
                 .anyMatch(type -> type.name().equals(taskType));
         if (!supported) {
             throw new BusinessException(ErrorCode.TASK_TYPE_UNSUPPORTED);
+        }
+    }
+
+    private void validateAgentPayload(Object payload) {
+        JsonNode node = objectMapper.valueToTree(payload);
+        if (node == null || !node.isObject()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "instruction is required");
+        }
+        JsonNode instructionNode = node.get("instruction");
+        if (instructionNode == null || !instructionNode.isTextual()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "instruction is required");
+        }
+        String instruction = instructionNode.asText().trim();
+        if (instruction.isEmpty()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "instruction is required");
+        }
+        if (instruction.length() > MAX_INSTRUCTION_LENGTH) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "instruction must be at most 2000 characters");
         }
     }
 

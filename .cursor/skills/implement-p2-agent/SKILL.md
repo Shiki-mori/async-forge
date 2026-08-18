@@ -11,14 +11,14 @@ Java 执行器细节读 [extend-task-executor](../extend-task-executor/SKILL.md)
 
 ## F20–F29
 
-- [ ] F20 `TaskType.AGENT_TASK`（不改表）
-- [ ] F21 `AgentTaskExecutor`（注册表扩展，禁止巨型 switch）
-- [ ] F22 Python：`GET /health` + A2A Card + `message/send`
+- [x] F20 `TaskType.AGENT_TASK`（不改表）
+- [x] F21 `AgentTaskExecutor`（注册表扩展，禁止巨型 switch）
+- [x] F22 Python：`GET /health` + A2A Card + `SendMessage`
 - [ ] F23 LangGraph 3～5 节点，最多 5 轮工具
 - [ ] F24 MCP 真实协议：`http_get` + `calculator`
-- [ ] F25 结构化结果（缺字段视为失败）
-- [ ] F26 超时 / `forceFail` 走现有重试与 DLQ
-- [ ] F27 Compose `agent` + `AGENT_BASE_URL=http://agent:8081`
+- [x] F25 结构化结果（缺字段视为失败）
+- [x] F26 超时 / `forceFail` 走现有重试与 DLQ
+- [x] F27 Compose `agent` + `AGENT_BASE_URL=http://agent:8081`
 - [ ] F28 控制台可提交并展示 result / error
 - [ ] F29 README：启动、环境变量、三条演示
 
