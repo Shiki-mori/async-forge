@@ -6,6 +6,8 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 - 启动、演示、环境变量：[README.md](README.md)
 - Python Agent 骨架搭建：[devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)
+- 验证步骤 A：[devLog/验证/P2-步骤A.md](devLog/验证/P2-步骤A.md)
+- **下一轮从这里做**：P2 步骤 B 交接：[devLog/交接/P2-下一步-步骤B-Java接入.md](devLog/交接/P2-下一步-步骤B-Java接入.md)
 - 表结构：[database/sql/schema.sql](database/sql/schema.sql)（P2 不改表）
 
 ## 给 Agent（事实来源）
@@ -29,4 +31,10 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 ## 当前阶段
 
-P0 已完成。P2（`AGENT_TASK` + Python Agent Runtime）未完成，按 `implement-p2-agent` 的 A→D 做。
+P0 已完成。P2 **步骤 A 已完成**（Python Agent 骨架：`/health` + A2A `SendMessage` stub）。
+
+下一步是 **步骤 B：Java 接入 `AGENT_TASK`**。交接说明（进度、契约坑、验收、不要做的事）：
+
+[devLog/交接/P2-下一步-步骤B-Java接入.md](devLog/交接/P2-下一步-步骤B-Java接入.md)
+
+仍按 `implement-p2-agent` 的 A→D；B 的操作清单是 `extend-task-executor`。不要跳到 C（真 LangGraph/MCP）或 D（控制台）。
