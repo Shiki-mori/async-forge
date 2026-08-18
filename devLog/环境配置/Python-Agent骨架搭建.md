@@ -190,7 +190,7 @@ sequenceDiagram
 
 - `AGENT_BASE_URL=http://agent:8081`（**写死服务名**，不要用 localhost）
 - `depends_on.agent.condition: service_healthy`
-- 本步 Java **还不读**这些变量；先注入，步骤 B 再接 `AgentA2aClient`
+- 步骤 B 起 Java 通过 `AgentProperties` / `AgentA2aClient` **读取** `AGENT_BASE_URL`；接线说明见 [P2-步骤B-Java接入.md](P2-步骤B-Java接入.md)
 
 禁止把该 URL 交给 `HTTP_CALL`：Java 的 SSRF 会拦 Docker DNS 名 `agent`。
 
@@ -233,7 +233,7 @@ curl -s -X POST http://localhost:8081/ \
 
 | 步骤 | 内容 |
 |------|------|
-| B | Java `TaskType.AGENT_TASK`、拆事务、`AgentA2aClient`、用本 stub 跑通 SUCCESS / DEAD |
+| B | **已完成**：Java `AGENT_TASK`、拆事务、`AgentA2aClient`。讲解：[P2-步骤B-Java接入.md](P2-步骤B-Java接入.md) |
 | C | MCP `http_get` + `calculator`，LangGraph Function Calling，去掉固定 JSON |
 | D | 控制台表单 + README 三条演示 |
 

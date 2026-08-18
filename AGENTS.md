@@ -7,6 +7,7 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - 启动、演示、环境变量：[README.md](README.md)
 - Python Agent 骨架搭建：[devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)
 - 验证步骤 A：[devLog/验证/P2-步骤A.md](devLog/验证/P2-步骤A.md)
+- Java 接入 AGENT_TASK：[devLog/环境配置/P2-步骤B-Java接入.md](devLog/环境配置/P2-步骤B-Java接入.md)
 - **下一轮从这里做**：P2 步骤 C 交接：[devLog/交接/P2-下一步-步骤C-真Agent.md](devLog/交接/P2-下一步-步骤C-真Agent.md)
 - 表结构：[database/sql/schema.sql](database/sql/schema.sql)（P2 不改表）
 
