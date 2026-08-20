@@ -19,8 +19,8 @@ Java 执行器细节读 [extend-task-executor](../extend-task-executor/SKILL.md)
 - [x] F25 结构化结果（缺字段视为失败）
 - [x] F26 超时 / `forceFail` 走现有重试与 DLQ
 - [x] F27 Compose `agent` + `AGENT_BASE_URL=http://agent:8081`
-- [ ] F28 控制台可提交并展示 result / error
-- [ ] F29 README：启动、环境变量、三条演示
+- [x] F28 控制台可提交并展示 result / error
+- [x] F29 README：启动、环境变量、三条演示
 
 ## 步骤 A — Python 骨架
 
