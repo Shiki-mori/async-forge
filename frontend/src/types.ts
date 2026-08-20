@@ -10,7 +10,7 @@ export interface LoginResponse {
   username: string
 }
 
-export type TaskType = 'HTTP_CALL' | 'DELAY_DEMO'
+export type TaskType = 'HTTP_CALL' | 'DELAY_DEMO' | 'AGENT_TASK'
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'DEAD'
 
 export interface TaskResponse {

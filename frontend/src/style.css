@@ -48,7 +48,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -124,7 +125,8 @@ input[type='text'],
 input[type='password'],
 input[type='number'],
 input[type='url'],
-select {
+select,
+textarea {
   width: 100%;
   padding: 0.7rem 0.85rem;
   border: 1px solid var(--line);
@@ -134,8 +136,14 @@ select {
   outline: none;
 }
 
+textarea {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--accent-dim);
   box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.15);
 }

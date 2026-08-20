@@ -20,10 +20,15 @@ const formError = ref('')
 const creating = ref(false)
 const loadingList = ref(false)
 
+const DEFAULT_AGENT_INSTRUCTION =
+  'GET https://httpbin.org/json ，告诉我 HTTP 状态码以及返回 JSON 的顶层字段名。'
+
 const taskType = ref<TaskType>('DELAY_DEMO')
 const delaySeconds = ref(2)
 const delayFail = ref(false)
 const httpUrl = ref('https://httpbin.org/get')
+const instruction = ref(DEFAULT_AGENT_INSTRUCTION)
+const forceFail = ref(false)
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -67,11 +72,7 @@ async function submitTask() {
   formError.value = ''
   creating.value = true
   try {
-    const payload =
-      taskType.value === 'DELAY_DEMO'
-        ? { seconds: Number(delaySeconds.value), fail: delayFail.value }
-        : { url: httpUrl.value.trim() }
-
+    const payload = buildPayload()
     const task = await createTask({ taskType: taskType.value, payload })
     await refreshList()
     await selectTask(task.id)
@@ -83,6 +84,16 @@ async function submitTask() {
   } finally {
     creating.value = false
   }
+}
+
+function buildPayload(): Record<string, unknown> {
+  if (taskType.value === 'DELAY_DEMO') {
+    return { seconds: Number(delaySeconds.value), fail: delayFail.value }
+  }
+  if (taskType.value === 'HTTP_CALL') {
+    return { url: httpUrl.value.trim() }
+  }
+  return { instruction: instruction.value.trim(), forceFail: forceFail.value }
 }
 
 function statusClass(status: string) {
@@ -152,6 +163,7 @@ onUnmounted(() => {
             <select v-model="taskType">
               <option value="DELAY_DEMO">DELAY_DEMO</option>
               <option value="HTTP_CALL">HTTP_CALL</option>
+              <option value="AGENT_TASK">AGENT_TASK</option>
             </select>
           </label>
 
@@ -166,10 +178,21 @@ onUnmounted(() => {
             </label>
           </template>
 
-          <template v-else>
+          <template v-else-if="taskType === 'HTTP_CALL'">
             <label>
               <span>URL（仅 GET）</span>
               <input v-model="httpUrl" type="url" required placeholder="https://..." />
+            </label>
+          </template>
+
+          <template v-else>
+            <label>
+              <span>指令</span>
+              <textarea v-model="instruction" rows="4" required maxlength="2000"></textarea>
+            </label>
+            <label class="check">
+              <input v-model="forceFail" type="checkbox" />
+              <span>强制失败（演示重试 / 死信）</span>
             </label>
           </template>
 
