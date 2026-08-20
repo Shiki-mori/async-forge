@@ -21,11 +21,28 @@ class AgentInstruction(BaseModel):
         return trimmed
 
 
-def stub_success_result() -> dict[str, Any]:
-    """Fixed SUCCESS JSON for Java wiring (no LLM)."""
-    return {
-        "summary": "stub: skipped LLM; instruction accepted for Java wiring.",
-        "finalAnswer": "stub success",
-        "toolCalls": [],
-        "durationMs": 0,
-    }
+class ToolCallRecord(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str
+    input: dict[str, Any]
+    ok: bool
+    output_snippet: str = Field(alias="outputSnippet")
+
+
+class AgentResult(BaseModel):
+    """result_json written by finalize and returned on A2A Task completed."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    summary: str
+    final_answer: str = Field(alias="finalAnswer")
+    tool_calls: list[ToolCallRecord] = Field(alias="toolCalls")
+    duration_ms: int = Field(alias="durationMs")
+
+    @field_validator("summary")
+    @classmethod
+    def summary_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("summary must be non-empty")
+        return value
