@@ -1,6 +1,6 @@
 # P2 步骤 D 验证（控制台 + README）
 
-步骤 D 只增量控制台表单与 README，不重做 Java 执行器（B）或 LangGraph / MCP（C）。规格以 [implement-p2-agent](../../.cursor/skills/implement-p2-agent/SKILL.md) 步骤 D、[frontend-console.mdc](../../.cursor/rules/frontend-console.mdc)、[demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 为准。
+步骤 D 只增量控制台表单与 README，不重做 Java 执行器（B）或 LangGraph / MCP（C）。规格以 [implement-p2-agent](../../.cursor/skills/implement-p2-agent/SKILL.md) 步骤 D、[frontend-console.mdc](../../.cursor/rules/frontend-console.mdc)、[demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 为准。每个改动文件在做什么，见 [P2-步骤D-控制台.md](../环境配置/P2-步骤D-控制台.md)。
 
 ## 通过标准
 

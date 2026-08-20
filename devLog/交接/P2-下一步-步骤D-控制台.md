@@ -11,7 +11,7 @@
 | C 真 Agent | **已完成** | LangGraph `fail_fast` → `reason` ⇄ `tools` → `finalize`；MCP `http_get` + `calculator` |
 | D 控制台 + 三条演示 | **已完成** | `types.ts` + `ConsoleView.vue`；README 架构与三条可抄演示 |
 
-F20–F29 已勾完。验证清单：[P2-步骤D.md](../验证/P2-步骤D.md)
+F20–F29 已勾完。代码说明：[P2-步骤D-控制台.md](../环境配置/P2-步骤D-控制台.md)。验证清单：[P2-步骤D.md](../验证/P2-步骤D.md)
 
 ## 2. 步骤 D 落地内容
 

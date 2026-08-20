@@ -10,6 +10,7 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - Java 接入 AGENT_TASK：[devLog/环境配置/P2-步骤B-Java接入.md](devLog/环境配置/P2-步骤B-Java接入.md)
 - 真 LangGraph / MCP：[devLog/环境配置/P2-步骤C-真Agent.md](devLog/环境配置/P2-步骤C-真Agent.md)
 - 步骤 C 验证：[devLog/验证/P2-步骤C.md](devLog/验证/P2-步骤C.md)
+- 控制台 / README 代码说明：[devLog/环境配置/P2-步骤D-控制台.md](devLog/环境配置/P2-步骤D-控制台.md)
 - 步骤 D 验证：[devLog/验证/P2-步骤D.md](devLog/验证/P2-步骤D.md)
 - 表结构：[database/sql/schema.sql](database/sql/schema.sql)（P2 不改表）
 

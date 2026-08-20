@@ -323,4 +323,4 @@ Python 不写 `task` 表、不连 RabbitMQ。Agent 没有旁路重试策略。
 - 改 Python 后要 **重建镜像**：`cd deploy && docker compose build agent && docker compose up -d agent`。
 - 未填 `AI_*` 时，对 Agent 发 `forceFail=false` 会 failed，文案为 `AI_BASE_URL, AI_API_KEY, and AI_MODEL are required`。这是预期，不是回归。
 
-启动命令、httpbin curl 见 [P2-步骤C.md](../验证/P2-步骤C.md)。下一步控制台见 [P2-下一步-步骤D-控制台.md](../交接/P2-下一步-步骤D-控制台.md)。
+启动命令、httpbin curl 见 [P2-步骤C.md](../验证/P2-步骤C.md)。控制台与 README（步骤 D）见 [P2-步骤D-控制台.md](P2-步骤D-控制台.md)。
