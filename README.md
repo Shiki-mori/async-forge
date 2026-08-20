@@ -57,14 +57,14 @@ mvn spring-boot:run
 cd frontend && npm run dev
 ```
 
-Agent 在宿主机单独跑（步骤 A 骨架，无需 `AI_API_KEY`）：
+Agent 在宿主机单独跑（成功路径需要 `AI_API_KEY`；`forceFail` 不需要）：
 
 ```bash
 cd agent
 python3 -m venv .venv   # Python 3.12+
 source .venv/bin/activate
 pip install -e .
-cp .env.example .env
+cp .env.example .env    # 填写 AI_BASE_URL / AI_API_KEY / AI_MODEL
 uvicorn app.main:app --host 0.0.0.0 --port 8081
 ```
 
@@ -79,16 +79,16 @@ curl -s http://localhost:8081/.well-known/agent-card.json
 
 A2A JSON-RPC 使用 **`POST /`**，method 为 **`SendMessage`**（a2a-sdk 1.x / A2A 1.0），请求头必须带 **`A2A-Version: 1.0`**。用户 Message 的文本 part 是 JSON 字符串。
 
-固定成功（无 LLM，供后续 Java 联调）：
+成功演示（LangGraph + MCP `http_get`，需要模型密钥）：
 
 ```bash
 curl -s -X POST http://localhost:8081/ \
   -H 'Content-Type: application/json' \
   -H 'A2A-Version: 1.0' \
-  -d '{"jsonrpc":"2.0","id":"1","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-ok","parts":[{"text":"{\"taskId\":1,\"instruction\":\"hello\",\"forceFail\":false}"}]}}}'
+  -d '{"jsonrpc":"2.0","id":"1","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-ok","parts":[{"text":"{\"taskId\":1,\"instruction\":\"GET https://httpbin.org/json ，告诉我 HTTP 状态码以及返回 JSON 的顶层字段名。\",\"forceFail\":false}"}]}}}'
 ```
 
-强制失败（A2A Task failed）：
+强制失败（A2A Task failed，无需模型）：
 
 ```bash
 curl -s -X POST http://localhost:8081/ \
@@ -97,7 +97,7 @@ curl -s -X POST http://localhost:8081/ \
   -d '{"jsonrpc":"2.0","id":"2","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-fail","parts":[{"text":"{\"taskId\":2,\"instruction\":\"任意内容\",\"forceFail\":true}"}]}}}'
 ```
 
-> Java Worker 已接入 `AGENT_TASK`（`POST /api/tasks` + curl 即可）。控制台表单与 README 三条完整演示是步骤 D。`DELAY_DEMO` / `HTTP_CALL` 演示语义不变。当前 Agent 成功体仍是步骤 A 的固定 stub（无 LLM）；步骤 C 才会换成真工具调用。
+> Java Worker 已接入 `AGENT_TASK`（`POST /api/tasks` + curl 即可）。控制台表单与 README 三条完整演示是步骤 D。`DELAY_DEMO` / `HTTP_CALL` 演示语义不变。Agent 成功路径走 LangGraph Function Calling + MCP，不再返回固定 stub。
 
 ## 演示流程
 
@@ -194,6 +194,6 @@ Python Agent 骨架如何搭建、A2A 如何挂载、Compose 如何接入，见 
 | `AGENT_PORT` | 宿主机映射的 Agent 端口，默认 `8081` |
 | `AGENT_BASE_URL` | Java Worker 调用 Agent 的基址。Compose 内必须是 `http://agent:8081`；仅本地 Java + 宿主机 Agent 时才用 `http://localhost:8081` |
 | `AGENT_TIMEOUT_SECONDS` | A2A 阻塞调用超时，默认 `60`（步骤 B 才会被 Java 读取） |
-| `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | OpenAI 兼容 Chat Completions。**步骤 C 之前可留空** |
+| `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | OpenAI 兼容 Chat Completions。步骤 C 起成功路径必填；`forceFail` 除外 |
 
 不要把 Agent URL 交给 `HTTP_CALL`（SSRF 会拦 Docker 服务名 `agent`）。

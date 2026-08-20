@@ -8,7 +8,8 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - Python Agent 骨架搭建：[devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)
 - 验证步骤 A：[devLog/验证/P2-步骤A.md](devLog/验证/P2-步骤A.md)
 - Java 接入 AGENT_TASK：[devLog/环境配置/P2-步骤B-Java接入.md](devLog/环境配置/P2-步骤B-Java接入.md)
-- **下一轮从这里做**：P2 步骤 C 交接：[devLog/交接/P2-下一步-步骤C-真Agent.md](devLog/交接/P2-下一步-步骤C-真Agent.md)
+- **下一轮从这里做**：P2 步骤 D 交接：[devLog/交接/P2-下一步-步骤D-控制台.md](devLog/交接/P2-下一步-步骤D-控制台.md)
+- 步骤 C 验证：[devLog/验证/P2-步骤C.md](devLog/验证/P2-步骤C.md)
 - 表结构：[database/sql/schema.sql](database/sql/schema.sql)（P2 不改表）
 
 ## 给 Agent（事实来源）
@@ -32,10 +33,10 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 ## 当前阶段
 
-P0 已完成。P2 **步骤 A、B 已完成**（Python stub + Java `AGENT_TASK` / 拆事务 / A2A `SendMessage`）。
+P0 已完成。P2 **步骤 A、B、C 已完成**（Python LangGraph + MCP；Java `AGENT_TASK` / 拆事务 / A2A `SendMessage`）。
 
-下一步是 **步骤 C：真 LangGraph + MCP**。交接说明：
+下一步是 **步骤 D：控制台 + README 三条演示**。交接说明：
 
-[devLog/交接/P2-下一步-步骤C-真Agent.md](devLog/交接/P2-下一步-步骤C-真Agent.md)
+[devLog/交接/P2-下一步-步骤D-控制台.md](devLog/交接/P2-下一步-步骤D-控制台.md)
 
-仍按 `implement-p2-agent` 的 A→D；C 的操作清单是 `python-a2a-mcp`。不要改控制台表单（那是 D），不要重做 Java 接入（B）。
+仍按 `implement-p2-agent` 的 A→D；D 不要重做 Java 接入（B）或 LangGraph/MCP（C）。

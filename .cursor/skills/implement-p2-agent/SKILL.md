@@ -14,8 +14,8 @@ Java 执行器细节读 [extend-task-executor](../extend-task-executor/SKILL.md)
 - [x] F20 `TaskType.AGENT_TASK`（不改表）
 - [x] F21 `AgentTaskExecutor`（注册表扩展，禁止巨型 switch）
 - [x] F22 Python：`GET /health` + A2A Card + `SendMessage`
-- [ ] F23 LangGraph 3～5 节点，最多 5 轮工具
-- [ ] F24 MCP 真实协议：`http_get` + `calculator`
+- [x] F23 LangGraph 3～5 节点，最多 5 轮工具
+- [x] F24 MCP 真实协议：`http_get` + `calculator`
 - [x] F25 结构化结果（缺字段视为失败）
 - [x] F26 超时 / `forceFail` 走现有重试与 DLQ
 - [x] F27 Compose `agent` + `AGENT_BASE_URL=http://agent:8081`
