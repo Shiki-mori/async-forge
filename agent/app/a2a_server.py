@@ -30,7 +30,7 @@ from a2a.types import (
 from fastapi import FastAPI
 
 from app.config import Settings
-from app.graph import ForceFailError, run_stub
+from app.graph import AgentRunError, ForceFailError, run_instruction
 from app.schemas import AgentInstruction
 
 
@@ -79,7 +79,7 @@ def build_agent_card(settings: Settings) -> AgentCard:
     )
 
 
-class StubAgentExecutor(AgentExecutor):
+class InstructionAgentExecutor(AgentExecutor):
     async def execute(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
@@ -131,17 +131,29 @@ class StubAgentExecutor(AgentExecutor):
 
         # 记录日志
         logger.info(
-            "agent stub taskId=%s instruction=%s forceFail=%s",
+            "agent run taskId=%s instruction=%s forceFail=%s",
             payload.task_id if payload.task_id is not None else task_id,
             _truncate(payload.instruction),
             payload.force_fail,
         )
 
         try:
-            result: dict[str, Any] = run_stub(payload)
-        except ForceFailError as exc:
+            result: dict[str, Any] = await run_instruction(payload)
+        except (ForceFailError, AgentRunError) as exc:
             await updater.failed(
                 message=updater.new_agent_message(parts=[Part(text=str(exc))])
+            )
+            return
+        except Exception as exc:
+            logger.exception(
+                "agent run failed taskId=%s err=%s",
+                payload.task_id if payload.task_id is not None else task_id,
+                type(exc).__name__,
+            )
+            await updater.failed(
+                message=updater.new_agent_message(
+                    parts=[Part(text=f"agent failed: {type(exc).__name__}")]
+                )
             )
             return
 
@@ -172,7 +184,7 @@ class StubAgentExecutor(AgentExecutor):
 def mount_a2a(app: FastAPI, settings: Settings) -> DefaultRequestHandler:
     agent_card = build_agent_card(settings)
     request_handler = DefaultRequestHandler(
-        agent_executor=StubAgentExecutor(),
+        agent_executor=InstructionAgentExecutor(),
         task_store=InMemoryTaskStore(),
         agent_card=agent_card,
     )

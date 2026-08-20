@@ -1,9 +1,17 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 from app.a2a_server import mount_a2a
 from app.config import get_settings
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("mcp").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
