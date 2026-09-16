@@ -1,0 +1,15 @@
+---
+description: 面试深挖 / 简历项目介绍。读 PRIVATE/简历描述.md，方案只写 PRIVATE/面试/。Glob 会漏掉 gitignore 目录。
+alwaysApply: false
+---
+
+# 面试准备（非产品功能）
+
+产品禁止做成面试 App。用户问本项目**面试、简历深挖、项目介绍、STAR、追问**时：走 skill `interview-prep`，不要当成要在代码里加聊天/面试功能。
+
+## 路径（gitignore，Glob/Grep 常为 0）
+
+- 简历原文：`/home/phrolova/CodeProject/async-forge/PRIVATE/简历描述.md`
+- 输出目录：`/home/phrolova/CodeProject/async-forge/PRIVATE/面试/`
+
+先用 **Read 绝对路径**。失败再用 Shell `cat`。不要因 Glob 为空判定文件不存在。材料不进 Git。

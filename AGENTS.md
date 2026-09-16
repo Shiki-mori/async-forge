@@ -26,12 +26,14 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - Python Agent：[.cursor/rules/python-agent.mdc](.cursor/rules/python-agent.mdc)
 - 控制台：[.cursor/rules/frontend-console.mdc](.cursor/rules/frontend-console.mdc)
 - Compose / 密钥 / 表：[.cursor/rules/compose-secrets.mdc](.cursor/rules/compose-secrets.mdc)
+- 面试深挖（询问面试 / 简历介绍时）：[.cursor/rules/interview-prep.mdc](.cursor/rules/interview-prep.mdc)
 
 ### Skills
 
 - P2 交付 A→D：[implement-p2-agent](.cursor/skills/implement-p2-agent/SKILL.md)
 - 执行器与拆事务：[extend-task-executor](.cursor/skills/extend-task-executor/SKILL.md)
 - A2A / LangGraph / MCP：[python-a2a-mcp](.cursor/skills/python-a2a-mcp/SKILL.md)
+- 面试深挖准备：[interview-prep](.cursor/skills/interview-prep/SKILL.md)（读 `PRIVATE/简历描述.md`，写 `PRIVATE/面试/`）
 
 ## 当前阶段
 

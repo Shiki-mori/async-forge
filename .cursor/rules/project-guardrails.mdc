@@ -15,3 +15,4 @@ alwaysApply: true
 - 明确不做：手动重试 HTTP、工作流引擎、Redis 限流、Kafka、K8s、改 `database/sql/schema.sql`、用 `HTTP_CALL` 打 Agent。
 - 偏离契约（A2A method / 端口）须先改对应 `.cursor/rules` 或 `.cursor/skills`，再改代码。
 - 工序：skill `implement-p2-agent`。执行器：`extend-task-executor`。A2A / MCP：`python-a2a-mcp`。
+- 个人面试准备走 skill `interview-prep`（读 `PRIVATE/简历描述.md`，写 `PRIVATE/面试/`），不是产品功能。
