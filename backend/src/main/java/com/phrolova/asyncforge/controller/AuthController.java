@@ -19,11 +19,13 @@ public class AuthController {
 
     private final UserService userService;
 
+    // 注册
     @PostMapping("/register")
     public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         return Result.success(userService.register(request));
     }
 
+    // 登录
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return Result.success(userService.login(request));

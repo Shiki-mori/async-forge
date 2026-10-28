@@ -2,6 +2,7 @@ package com.phrolova.asyncforge.worker;
 
 import com.phrolova.asyncforge.common.ErrorCode;
 import com.phrolova.asyncforge.exception.BusinessException;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class TaskExecutorRegistry {
     // 构造函数，收集所有任务执行器
     // 将任务执行器列表转换为Map，键为任务类型，值为任务执行器对象
     // 后续新增任务类型仅需添加一个 @Component 实现类
-    public TaskExecutorRegistry(List<TaskExecutor> executorList) {
+    public TaskExecutorRegistry(@NonNull List<TaskExecutor> executorList) {
         this.executors = executorList.stream()
                 .collect(Collectors.toMap(TaskExecutor::taskType, Function.identity()));
     }

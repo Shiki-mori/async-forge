@@ -33,7 +33,7 @@ public class AgentA2aClient {
 
     private final ObjectMapper objectMapper;
     private final AgentProperties agentProperties;
-    // uvicorn 只讲 HTTP/1.1；JDK 默认 HTTP/2 upgrade 会把 POST body 弄丢，Agent 侧出现 JSON-RPC -32700
+    // uvicorn  HTTP/1.1；JDK 默认 HTTP/2 upgrade 会把 POST body 弄丢，Agent 侧出现 JSON-RPC -32700
     private final HttpClient httpClient = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
             .connectTimeout(Duration.ofSeconds(5))
