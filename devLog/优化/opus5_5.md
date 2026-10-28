@@ -1,0 +1,93 @@
+## 总评
+
+项目的定位和边界是清楚的（任务平台而不是聊天机器人、Java 管可靠性、拆事务、执行器不改状态、A2A 结果校验），这在校招项目里已经高于平均。但它的卖点是"可靠性"，而目前最大的几个洞恰好都在可靠性上，并且你自己已经在 `05-边界-不足-AI怎么说.md` 里准备好要"主动承认"了。**把准备承认的缺口做成已解决的问题，并讲清 trade-off，是性价比最高的改法。** 再加上测试和 CI 完全没有，这是 Java 后端岗面试官一定会问到的。
+
+## 面试官会直接戳的硬伤
+
+按被问到的概率和杀伤力排序：
+
+1. **零测试。** `backend/src/test/java` 是空目录`agent/` 也没有 pytest。"你怎么验证重试到 DEAD 这条链路？"目前只能答"手动 curl"。
+2. **Worker 实际是单线程。** `application.yml` 没配 `spring.rabbitmq.listener.simple.concurrency`，默认 1 个消费者。这意味着一个 60 秒的 `AGENT_TASK` 会把整个平台卡成 1 任务/分钟；更麻烦的是，简历里"拆事务避免长耗时占用数据库连接"的故事，在只有 1 条 Worker 线程时只是理论上成立——面试官问一句"你 Worker 几个线程"就能把这段讲穿。
+3. **重试是立即重投，没有退避。** `handleFailure` 写 `PENDING` 后 `publishAfterCommit`，3 次尝试在几百毫秒内打完。Agent 重启 2 秒，任务就 DEAD 了。
+4. **DLQ 在业务失败时是空的。** 业务失败走 ACK + 应用重投，只有未捕获异常才 NACK。README 演示 1 说"管理台能看到 `task.execute.dlq`"，实际看到的是空队列`FAILED` 在枚举和抢占 SQL 里，但没有任何代码写它，状态图和实现不一致。
+5. **两个悬挂窗口没有补偿。** RUNNING 悬挂（claim 后进程被杀）和 PENDING 悬挂（commit 后 `convertAndSend` 失败），你文档里都承认了，但没有任何扫描或 lease 机制。
+6. **没有可观测性。** 没有 Actuator、没有指标、日志里没有 MDC `taskId`。"线上一个任务卡住了你怎么查"答不上来。
+7. **Java 侧 SSRF 比 Python 侧松。** `HttpCallExecutor` 用 `Redirect.NORMAL` 跟随重定向（公网 URL 302 到内网即可绕过）`InetAddress.getByName` 只检查第一个解析地址，Python 侧是 `follow_redirects=False` 且检查全部地址。
+
+
+
+## 建议的改造路线（P3）
+
+不动项目定位，所有改动都在"同一条链路的可靠语义"上加深。
+
+### 第一梯队：必做，直接影响面试
+
+**1. 测试 + CI**
+
+- 单测`TaskExecutionService`（终态跳过、claim 失败跳过、成功、失败重投、耗尽 DEAD）`HttpCallExecutor` 的 SSRF 拦截`AgentA2aClient` 用 WireMock/MockWebServer 覆盖 COMPLETED / FAILED / 超时 / 非法 JSON 四条分支。
+- 集成测试：Testcontainers 起 MySQL + RabbitMQ，跑通 `DELAY_DEMO fail=true → retryCount=3 → DEAD`。这一条测试本身就是最好的面试讲稿。
+- Python：pytest 覆盖 `calculator` 的 AST 白名单和 `http_get` 的 SSRF 判定。
+- GitHub Actions`mvn verify` + `pytest` + `docker compose build`，README 加 badge。
+
+**2. 延迟重试 + 让** `FAILED` **真实存在**
+
+- 加一个 `task.retry.q`，无消费者`x-dead-letter-exchange` 指回 `task.exchange`，发消息时按 `retryCount` 设置 per-message `expiration`（如 2s / 8s / 32s），实现指数退避，不需要插件。
+- 失败未耗尽时写 `FAILED`（而不是 `PENDING`）`claimForExecution` 已经接受 `FAILED → RUNNING`，正好把枚举和状态图对上。
+- 面试讲点：为什么不用 `Thread.sleep` 退避（占 Worker 线程）、TTL 队列的队头阻塞问题、为什么分级队列或延迟插件能解决。
+
+**3. 耗尽时消息真正进 DLQ**
+
+- `execute` 返回一个 outcome`SUCCESS / RETRY / EXHAUSTED`）`TaskConsumer` 在 `EXHAUSTED` 时 NACK `requeue=false`，消息经 DLX 落到 `task.execute.dlqDlqListener` 保持幂等。
+- 这样 DLQ 变成可检查、可回放的死信归档，README 演示 1 的描述就是真的了。
+
+**4. Worker 并发可配置**
+
+- `concurrency` / `max-concurrency` 从环境变量注入，默认给 4，保留 `prefetch: 1`。
+- 加一条演示：一次提交 20 个 `DELAY_DEMO`，用 `updated_at` 时间戳证明并行执行。这之后拆事务的故事才有真实的连接池压力支撑。
+
+
+
+### 第二梯队：把已知缺口关掉
+
+**5. Lease 式 RUNNING 回收 + PENDING 补偿扫描**
+
+- 一个 `@Scheduled` 任务`UPDATE task SET status='PENDING' WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL :lease SECOND`，然后重投；另一条扫长时间 `PENDING` 的行补投。两条 UPDATE 都是原子的，多实例跑也安全，重投后由 `claimForExecution` 保证只执行一次。
+- 关键 trade-off 要能讲：lease 必须大于最大执行时长`AGENT_TIMEOUT_SECONDS` + 余量），否则会把还在跑的任务重复执行。
+- 这一条可以不改表（用 `updated_at` 当 lease 时间戳）。要做干净版加 `lease_until` / `next_retry_at` 列，需要先改 `project-guardrails.mdc` 和 `compose-secrets.mdc` 里"不改 schema"的约束，再动代码。
+
+**6. Publisher confirm + return callback**
+
+- `spring.rabbitmq.publisher-confirm-type: correlated` + `publisher-returns: trueRabbitTemplate` 注册 confirm/return 回调，投递失败至少打 WARN 并计数。配合第 5 条的 PENDING 扫描，就是一个"轻量 outbox"方案，面试时可以对比真正的 outbox 表为什么没做。
+
+**7. 可观测性**
+
+- `spring-boot-starter-actuator` + Micrometer`task_executed_total{type,outcome}` 计数器`task_execution_seconds{type}` 计时器。
+- MDC`TaskConsumer` 入口 `MDC.put("taskId", ...)finally` 清理；A2A 请求头带上 `X-Request-Id`，Python 侧日志也打，这样一条任务的日志能跨 API → MQ → Worker → Agent 串起来。
+
+**8. Java 侧 SSRF 对齐 Python**
+
+- `HttpCallExecutor` 改 `Redirect.NEVERInetAddress.getAllByName` 全部检查，显式拦 `169.254.169.254` / `metadata.google.internal`。小改动，但面试时"两侧防护等级一致"是加分点。
+
+
+
+### 第三梯队：工程细节
+
+- `listTasks` 加分页和状态过滤（MyBatis-Plus `Page`），前端轮询时不再拉全量。
+- 创建任务支持 `Idempotency-Key` 请求头，防止双击重复建任务（需要唯一索引，同样涉及改表）。
+- `server.shutdown: graceful` + 监听容器 `shutdown-timeout`，让 SIGTERM 等待在途任务，缩小 RUNNING 悬挂窗口。
+- 非 dev profile 下 JWT secret 是默认值时直接启动失败。
+- Python 侧 `run_instruction` 每次都 `_create_mcp_client()` + 新 stdio 会话，等于每个任务 fork 一个 MCP 子进程，可以改成应用生命周期内复用一个会话。
+- `max_retry=3` 实际是"3 次尝试、2 次重试"，要么改名要么在文档里说清。
+
+
+
+## 不建议做的
+
+你红线里列的 Kafka、K8s、Redis 限流、工作流引擎、Multi-Agent、聊天窗，依然不建议碰。它们会稀释项目的叙事，而且每加一个名词就多一组你答不深的追问。上面第一、二梯队做完，项目的深度已经够支撑 40 分钟的追问。
+
+## 顺手发现
+
+- 当前未提交的 diff 里`AgentA2aClient` 第 36 行注释 `// uvicorn 只讲 HTTP/1.1` 被改成了 `// uvicorn  HTTP/1.1`（"只讲"两个字没了，留了双空格），看起来是误删`@NonNull` 那处能编译`jspecify` 1.0.0 已在 classpath 上。
+- 后端 `Dockerfile` 没有依赖缓存层`COPY pom.xml` 后直接 `COPY src`），每次改代码都全量下载依赖。
+
+如果要动手，我建议的顺序是：测试 + CI → 延迟重试与 FAILED 状态 → 耗尽进 DLQ → 并发配置 → lease 回收。前四项不需要改表，也不需要改任何 rule。
