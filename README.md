@@ -1,190 +1,180 @@
 # async-forge
 
-基于 Spring Boot 3 的异步任务平台：任务提交后经 RabbitMQ 投递并由 Worker 消费执行，支持状态机流转、失败重试、死信队列与消费幂等。
+async-forge 是一个基于 Spring Boot 和 RabbitMQ 的异步任务平台。API 接收任务并返回任务 ID，Worker 异步执行，控制台可以查看状态、结果和失败原因。平台支持延迟演示、HTTP GET 和 Agent 任务，三种任务共享抢占、状态回写与有限重试。
 
-`AGENT_TASK` 是同一套状态机上的一种任务类型，不是新平台。Java 负责可靠性，Python 负责智能。
+[快速启动](#快速启动) · [API 演示](#api-演示) · [任务状态与消息确认](#任务状态与消息确认)
 
-## 架构
+## 架构与关键实现
 
 ```text
-控制台 / curl  ──HTTP──►  Java API（JWT、入库、投递）
-                                  │
-                                  ▼
-                             RabbitMQ
-                                  │
-                    Java Worker（抢占、执行、重试、死信）
-                                  │
-                    AGENT_TASK 时阻塞一次 A2A SendMessage
-                                  ▼
-                    Python Agent（LangGraph + MCP 两工具）
+控制台 / curl ──HTTP──► Java API ──写入 PENDING──► MySQL
+                           │
+                           └──提交后投递 taskId──► RabbitMQ ──► Java Worker
+                                                                     │
+                                                     AGENT_TASK 时通过 A2A 调用
+                                                                     ▼
+                                                       Python Agent（LangGraph + MCP）
 ```
 
-| 层 | 职责 | 明确不做什么 |
-|----|------|----------------|
-| 前端控制台 | 提交任务、展示 payload / result / error | 不直连 Agent、不做聊天窗或流式打字 |
-| Java | 鉴权、入库、MQ、抢占、重试、死信 | 不加 LLM SDK；不用 `HTTP_CALL` 打 Agent |
-| Python Agent | 推理与受限工具（`http_get`、`calculator`） | 不连 MySQL / RabbitMQ，不写 `task` 表 |
+- **提交后投递。** API 将任务写为 `PENDING`，在事务提交后通过 `afterCommit` 把 `taskId` 投递到 RabbitMQ，避免 Worker 读到尚未提交的任务。可查看 [TaskServiceImpl](backend/src/main/java/com/phrolova/asyncforge/service/impl/TaskServiceImpl.java) 和 [TaskProducer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskProducer.java)。
+- **条件抢占与短事务。** Worker 用条件更新获取执行权，抢占成功后才调用执行器。HTTP 和 A2A 调用在数据库事务外执行，执行结果再用短事务回写。可查看 [TaskMapper](backend/src/main/java/com/phrolova/asyncforge/mapper/TaskMapper.java) 和 [TaskExecutionService](backend/src/main/java/com/phrolova/asyncforge/service/TaskExecutionService.java)。
+- **通过执行器扩展任务类型。** Worker 按任务类型选择执行器。`AGENT_TASK` 通过 A2A 调用 Python Agent，由 LangGraph 调度 MCP 工具 `http_get` 和 `calculator`。Java 在写入 `SUCCESS` 前校验 `summary` 为非空字符串、`toolCalls` 为数组。调用超时、Agent 返回失败和结果校验失败均走平台的重试流程。可查看 [TaskExecutorRegistry](backend/src/main/java/com/phrolova/asyncforge/worker/TaskExecutorRegistry.java)、[AgentTaskExecutor](backend/src/main/java/com/phrolova/asyncforge/worker/AgentTaskExecutor.java) 和 [Agent 执行图](agent/app/graph.py)。
 
-Worker 远程调用（A2A / HTTP）在 DB 事务外进行。未通过 schema 校验的模型原文不会写成 `SUCCESS`。
-
-## 技术栈
-
-- Java 17 + Spring Boot 3.5
-- Spring Security + JWT
-- MyBatis-Plus + MySQL 8
-- RabbitMQ
-- Python 3.12 + FastAPI + a2a-sdk + LangGraph + MCP（Agent Runtime）
-- Vue 3 控制台
-- Docker Compose
+后端使用 Java 17、Spring Boot 3.5、Spring Security + JWT、MyBatis-Plus 和 MySQL 8。Agent Runtime 使用 Python 3.12、FastAPI 和 a2a-sdk，控制台使用 Vue 3。
 
 ## 快速启动
 
-### Docker 一键启动（推荐）
+安装 Docker 和 Compose 插件后，在仓库根目录执行以下命令。**运行 `DELAY_DEMO` 和演示 Agent 强制失败均无需模型密钥。**
 
 ```bash
 cd deploy
-cp .env.example .env
-cp docker-compose.yml.example docker-compose.yml
-# 在 .env 填写 AI_BASE_URL / AI_API_KEY / AI_MODEL（Agent 成功路径需要；forceFail 不需要）
+test -f .env || cp .env.example .env
+test -f docker-compose.yml || cp docker-compose.yml.example docker-compose.yml
 docker compose up -d --build
 ```
 
-会启动 MySQL、RabbitMQ、Python Agent、后端、前端。MySQL 首次启动时自动执行 `database/sql/schema.sql`。
+Compose 会启动 MySQL、RabbitMQ、Python Agent、后端与前端。MySQL 初始化数据卷时会执行 [schema.sql](database/sql/schema.sql)。
 
-| 服务 | 默认地址 |
-|------|----------|
-| 前端控制台 | http://localhost:5173 |
-| 后端 API / Swagger | http://localhost:8090 、`/swagger-ui.html` |
-| Python Agent | http://localhost:8081 （`/health`、`/.well-known/agent-card.json`） |
-| RabbitMQ 管理台 | http://localhost:15672 （guest/guest） |
+### 在控制台体验任务执行
 
-前端 Nginx 会把 `/api` 反代到后端容器，浏览器只需访问前端端口。不要把 Agent URL 填进 `HTTP_CALL`。
+1. 打开 [任务控制台](http://localhost:5173)，注册或登录。
+2. 选择 `DELAY_DEMO`，延迟填 1 秒，直接提交。选择刚创建的任务，查看 `SUCCESS` 状态和 Result 中的执行结果。
+3. 勾选「强制失败」再提交一次。默认配置下，任务在第三次执行失败后进入 `DEAD`，详情显示 `retryCount=3`，Error 面板显示失败原因。
 
-> **注意：** compose 使用独立项目名 `async-forge` 与独立网络，避免与同目录下其他项目冲突。宿主机端口可在 `.env` 中修改（如本机 3306 被占用可改 `MYSQL_PORT`；本机 8081 被占用可改 `AGENT_PORT`，Compose 内 Java 仍用 `http://agent:8081`）。
+本地服务还包括 [Swagger UI](http://localhost:8090/swagger-ui.html)、[Agent 健康检查](http://localhost:8081/health) 和 [RabbitMQ 管理台](http://localhost:15672)（默认 `guest` / `guest`）。宿主机端口冲突时，可以在 `deploy/.env` 中调整对应的端口变量。
 
-停止：
+停止服务时，在 `deploy/` 目录运行 `docker compose down`。
 
-```bash
-cd deploy && docker compose down
-```
+## API 演示
 
-### 本地调试（可选）
+### 获取令牌
 
-仅起中间件，后端 / 前端在宿主机跑：
+首次运行时注册账号。已有同名账号时，将下面的请求路径改成 `/api/auth/login` 并使用对应密码。
 
 ```bash
-cd deploy && docker compose up -d mysql rabbitmq
-
-# 后端（本地 Java 连 Agent 时用 AGENT_BASE_URL=http://localhost:8081）
-cd backend
-set -a && source ../deploy/.env && set +a
-mvn spring-boot:run
-
-# 前端（Vite 将 /api 代理到 localhost:8090）
-cd frontend && npm run dev
-```
-
-Agent 在宿主机单独跑（成功路径需要 `AI_API_KEY`；`forceFail` 不需要）：
-
-```bash
-cd agent
-python3 -m venv .venv   # Python 3.12+
-source .venv/bin/activate
-pip install -e .
-cp .env.example .env    # 填写 AI_BASE_URL / AI_API_KEY / AI_MODEL
-uvicorn app.main:app --host 0.0.0.0 --port 8081
-```
-
-核验 Agent：
-
-```bash
-curl -s http://localhost:8081/health
-# {"status":"ok"}
-
-curl -s http://localhost:8081/.well-known/agent-card.json
-```
-
-A2A JSON-RPC 使用 **`POST /`**，method 为 **`SendMessage`**（a2a-sdk 1.x / A2A 1.0），请求头必须带 **`A2A-Version: 1.0`**。用户 Message 的文本 part 是 JSON 字符串。直连 Agent 的调试 curl 见下方「可选：直连 Agent」。
-
-## 演示流程
-
-控制台（http://localhost:5173）登录后可提交同一套 payload，详情面板展示 Payload / Result / Error。下面三条是 README 必须可抄的演示（默认 `max_retry=3`）。不要用 `HTTP_CALL` 打 Agent。
-
-### 注册并登录
-
-```bash
-curl -s -X POST http://localhost:8090/api/auth/register \
+curl -sS -X POST http://localhost:8090/api/auth/register \
   -H 'Content-Type: application/json' \
   -d '{"username":"demo","password":"demo123"}'
 ```
 
-保存返回的 `token`。
-
-### 1. 平台可靠性：DELAY_DEMO → 死信
+将响应中的 `data.token` 填入下方变量，后续命令在同一终端运行。
 
 ```bash
-curl -s -X POST http://localhost:8090/api/tasks \
-  -H "Authorization: Bearer <token>" \
+TOKEN='替换为 data.token 的值'
+```
+
+### 1. DELAY_DEMO 失败与有限重试
+
+```bash
+curl -sS -X POST http://localhost:8090/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"taskType":"DELAY_DEMO","payload":{"seconds":1,"fail":true}}'
 ```
 
-查询任务：
+将创建响应中的 `data.id` 填入 `TASK_ID`，然后查询任务状态。下方查询命令适用于所有任务类型。
 
 ```bash
-curl -s http://localhost:8090/api/tasks/<taskId> \
-  -H "Authorization: Bearer <token>"
+TASK_ID='替换为 data.id 的值'
+curl -sS "http://localhost:8090/api/tasks/$TASK_ID" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-期望：`retryCount` 增加到耗尽 → 状态 `DEAD`；RabbitMQ 管理台能看到队列 `task.execute.dlq`。
+默认配置下，最终 `data.status` 为 `DEAD`，`data.retryCount` 为 3。要验证成功路径，将 `fail` 改为 `false` 后提交新任务并查看 `data.result`。
 
-### 2. Agent 成功（httpbin）
+### 2. AGENT_TASK 成功调用 MCP 工具
 
-需要已填写 `AI_API_KEY`。控制台选 `AGENT_TASK`，默认指令即可。
+先在 `deploy/.env` 填写 `AI_BASE_URL`、`AI_API_KEY` 和 `AI_MODEL`，模型需支持工具调用。如果服务已启动，在 `deploy/` 目录运行 `docker compose up -d agent` 以应用配置。此示例还需要 Agent 容器能够访问 `https://httpbin.org/json`。
 
 ```bash
-curl -s -X POST http://localhost:8090/api/tasks \
-  -H "Authorization: Bearer <token>" \
+curl -sS -X POST http://localhost:8090/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"taskType":"AGENT_TASK","payload":{"instruction":"GET https://httpbin.org/json ，告诉我 HTTP 状态码以及返回 JSON 的顶层字段名。","forceFail":false}}'
 ```
 
-期望：`SUCCESS`；`result.summary` 非空；`result.toolCalls` 含 `http_get`。空 `instruction` 创建返回业务码 `40000`。
+预期 `data.status` 为 `SUCCESS`，`data.result.summary` 非空，`data.result.toolCalls` 中包含 `http_get` 的调用记录。
 
-### 3. Agent 失败进死信
+### 3. AGENT_TASK 强制失败并进入 DEAD
 
-不调用成功路径（无需模型密钥）。证明 Agent 没有旁路现有重试策略。
+`forceFail` 会让 Python Agent 返回 A2A 失败状态，无需配置模型。Java Worker 通过同一个 `handleFailure` 处理这次失败。
 
 ```bash
-curl -s -X POST http://localhost:8090/api/tasks \
-  -H "Authorization: Bearer <token>" \
+curl -sS -X POST http://localhost:8090/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"taskType":"AGENT_TASK","payload":{"instruction":"任意内容","forceFail":true}}'
 ```
 
-期望：任务最终 `DEAD`；`errorMessage` 可在控制台 Error 面板看到。
+预期 `data.status` 为 `DEAD`，`data.errorMessage` 记录失败原因。
 
-### 可选：DELAY_DEMO 成功 / HTTP_CALL
+### HTTP_CALL
 
-```bash
-curl -s -X POST http://localhost:8090/api/tasks \
-  -H "Authorization: Bearer <token>" \
-  -H 'Content-Type: application/json' \
-  -d '{"taskType":"DELAY_DEMO","payload":{"seconds":1}}'
+`HTTP_CALL` 对指定的公开 URL 发起 GET 请求，例如 `https://httpbin.org/get`。控制台选择 `HTTP_CALL` 后填写 URL 即可。调用 Python Agent 时选择 `AGENT_TASK`。
+
+## 任务状态与消息确认
+
+```text
+PENDING ──抢占──► RUNNING ──成功────────────────► SUCCESS
+                    ├──执行失败且未达阈值───────► PENDING（提交后重新投递）
+                    └──执行失败且达到阈值───────► DEAD
 ```
 
+- **抢占。** 条件更新仅允许 `PENDING` 或 `FAILED` 进入 `RUNNING`。`SUCCESS`、`DEAD` 和抢占失败的任务会跳过执行。当前业务失败处理直接写回 `PENDING` 或 `DEAD`。
+- **有限重试。** `retryCount` 记录累计执行失败次数。默认 `max_retry=3`，首次失败后最多再执行两次。业务失败处理完成后，消费者 ACK 当前消息。
+- **RabbitMQ 死信。** 异常传播到消费者时，消费者发出 `NACK(requeue=false)`，RabbitMQ 按死信配置将消息路由到 `task.execute.dlq`。死信监听器会将尚未标记为 `DEAD` 的对应任务收口并确认消息。管理台中可以查看死信队列和路由配置，强制失败演示则通过任务状态与错误信息验证。可查看 [TaskConsumer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskConsumer.java)、[RabbitMqConfig](backend/src/main/java/com/phrolova/asyncforge/config/RabbitMqConfig.java) 和 [DlqListener](backend/src/main/java/com/phrolova/asyncforge/mq/DlqListener.java)。
+
+## 本地调试
+
+先按[快速启动](#快速启动)准备 `deploy/.env` 和 `deploy/docker-compose.yml`。仅用 Compose 启动中间件时，从仓库根目录运行以下命令。
+
 ```bash
-curl -s -X POST http://localhost:8090/api/tasks \
-  -H "Authorization: Bearer <token>" \
-  -H 'Content-Type: application/json' \
-  -d '{"taskType":"HTTP_CALL","payload":{"url":"https://httpbin.org/get"}}'
+cd deploy
+docker compose up -d mysql rabbitmq
 ```
 
-`DELAY_DEMO` / `HTTP_CALL` 的成功演示语义不变，不要改它们来接 Agent。
+在新的终端从仓库根目录启动后端。
 
-### 可选：直连 Agent
+```bash
+cd backend
+set -a && source ../deploy/.env && set +a
+mvn spring-boot:run
+```
 
-成功（LangGraph + MCP `http_get`，需要模型密钥）：
+在另一个终端从仓库根目录启动前端。Vite 会将 `/api` 代理到 `localhost:8090`。
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+如需本地执行 `AGENT_TASK`，在新的终端从仓库根目录准备 Python 3.12 环境。
+
+```bash
+cd agent
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+test -f .env || cp .env.example .env
+```
+
+演示 Agent 成功路径时，先在 `agent/.env` 填写模型配置，再从 `agent/` 目录启动服务。
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8081
+```
+
+### 直连 Agent 调试
+
+```bash
+curl -sS http://localhost:8081/health
+curl -sS http://localhost:8081/.well-known/agent-card.json
+```
+
+A2A JSON-RPC 使用 `POST /` 和 `SendMessage`（a2a-sdk 1.x / A2A 1.0），请求头为 `A2A-Version: 1.0`。用户消息的文本 part 携带 JSON 字符串。
+
+调用 LangGraph 和 MCP `http_get`，需配置模型。
 
 ```bash
 curl -s -X POST http://localhost:8081/ \
@@ -193,7 +183,7 @@ curl -s -X POST http://localhost:8081/ \
   -d '{"jsonrpc":"2.0","id":"1","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-ok","parts":[{"text":"{\"taskId\":1,\"instruction\":\"GET https://httpbin.org/json ，告诉我 HTTP 状态码以及返回 JSON 的顶层字段名。\",\"forceFail\":false}"}]}}}'
 ```
 
-强制失败（A2A Task failed，无需模型）：
+强制失败会返回 A2A Task failed，无需配置模型。
 
 ```bash
 curl -s -X POST http://localhost:8081/ \
@@ -202,46 +192,29 @@ curl -s -X POST http://localhost:8081/ \
   -d '{"jsonrpc":"2.0","id":"2","method":"SendMessage","params":{"message":{"role":"ROLE_USER","messageId":"msg-fail","parts":[{"text":"{\"taskId\":2,\"instruction\":\"任意内容\",\"forceFail\":true}"}]}}}'
 ```
 
-若改了 `AGENT_PORT`，把上面的 `8081` 换成该端口。Compose 内 Java 仍是 `http://agent:8081`。
+若修改了 `AGENT_PORT`，请将示例中的 `8081` 换成对应的宿主机端口。
 
-## 任务状态流转
+## 环境变量
 
-```text
-PENDING → RUNNING → SUCCESS
-                 ↘ FAILED →（未超 max_retry）→ PENDING → ...
-                 ↘ FAILED →（超过 max_retry）→ DEAD
-```
+配置示例见 [deploy/.env.example](deploy/.env.example) 和 [agent/.env.example](agent/.env.example)。模型密钥保存在本地 `.env` 中。
 
-- **FAILED**：单次执行失败，仍可能重试
-- **DEAD**：重试耗尽后的终态；消息也会进入 RabbitMQ 死信队列 `task.execute.dlq`
-
-## 幂等消费
-
-消费者通过条件更新 `PENDING/FAILED → RUNNING` 抢占任务；同一 `taskId` 重复投递不会重复执行已成功或已死信的任务。
+| 变量 | 用途 |
+| --- | --- |
+| `AGENT_PORT` | Compose 映射到宿主机的 Agent 端口，默认 `8081` |
+| `AGENT_BASE_URL` | Java Worker 调用 Agent 的基址。Compose 内为 `http://agent:8081`，Java 和 Agent 均在宿主机运行时为 `http://localhost:8081` |
+| `AGENT_TIMEOUT_SECONDS` | A2A 请求超时，默认 60 秒 |
+| `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | OpenAI 兼容 Chat Completions 配置，用于执行 Agent 成功路径 |
 
 ## 目录结构
 
 ```text
 async-forge/
-├── agent/            # Python Agent Runtime（FastAPI + LangGraph + MCP）
-├── backend/          # Spring Boot 后端
-├── database/sql/     # DDL（P2 不改表）
-├── deploy/           # Docker Compose
-├── devLog/           # 搭建与验证记录
-└── frontend/         # Vue 控制台（含 AGENT_TASK 表单）
+├── backend/       # Spring Boot API、Worker 与任务执行器
+├── agent/         # Python Agent Runtime
+├── frontend/      # Vue 任务控制台
+├── database/sql/  # MySQL 初始化脚本
+├── deploy/        # Docker Compose 与环境变量示例
+└── devLog/        # 搭建与验证记录
 ```
 
-Python Agent 骨架如何搭建、A2A 如何挂载、Compose 如何接入，见 [devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)。Docker 启停与本机端口，见 [devLog/环境配置/Python-Agent-Docker.md](devLog/环境配置/Python-Agent-Docker.md)。
-
-## 环境变量
-
-见 `deploy/.env.example` 与 `agent/.env.example`。密钥请勿提交 Git，不要把真实 `AI_API_KEY` 写进示例文件。
-
-| 变量 | 说明 |
-|------|------|
-| `AGENT_PORT` | 宿主机映射的 Agent 端口，默认 `8081` |
-| `AGENT_BASE_URL` | Java Worker 调用 Agent 的基址。Compose 内必须是 `http://agent:8081`；仅本地 Java + 宿主机 Agent 时才用 `http://localhost:8081` |
-| `AGENT_TIMEOUT_SECONDS` | A2A 阻塞调用超时，默认 `60` |
-| `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL` | OpenAI 兼容 Chat Completions。成功路径必填；`forceFail` 除外 |
-
-不要把 Agent URL 交给 `HTTP_CALL`（SSRF 会拦 Docker 服务名 `agent`）。
+进一步了解 Agent 的骨架与 Compose 接入，可查看 [Python Agent 骨架搭建](devLog/环境配置/Python-Agent骨架搭建.md) 和 [Python Agent Docker 部署](devLog/环境配置/Python-Agent-Docker.md)。
