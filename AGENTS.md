@@ -1,6 +1,6 @@
 # AGENTS.md
 
-async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ → Worker → 可查 → 重试 / 死信），与 VitaeLens（简历分析）互补。Agent 只是任务类型 `AGENT_TASK`，失败走同一套 DLQ。禁止做成第二个简历 / 面试 App。
+async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ → Worker → 可查 → 重试 / 死信）。Agent 只是任务类型 `AGENT_TASK`，失败走同一套 DLQ。
 
 ## 给人类
 
