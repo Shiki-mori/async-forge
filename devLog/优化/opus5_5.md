@@ -1,12 +1,14 @@
 ## 总评
 
+>该建议来自opus5.5
+
 项目的定位和边界是清楚的（任务平台而不是聊天机器人、Java 管可靠性、拆事务、执行器不改状态、A2A 结果校验），这在校招项目里已经高于平均。但它的卖点是"可靠性"，而目前最大的几个洞恰好都在可靠性上，并且你自己已经在 `05-边界-不足-AI怎么说.md` 里准备好要"主动承认"了。**把准备承认的缺口做成已解决的问题，并讲清 trade-off，是性价比最高的改法。** 再加上测试和 CI 完全没有，这是 Java 后端岗面试官一定会问到的。
 
 ## 面试官会直接戳的硬伤
 
 按被问到的概率和杀伤力排序：
 
-1. **零测试。** `backend/src/test/java` 是空目录`agent/` 也没有 pytest。"你怎么验证重试到 DEAD 这条链路？"目前只能答"手动 curl"。
+1. **零测试。** `backend/src/test/java` 是空目录，`agent/` 也没有 pytest。"你怎么验证重试到 DEAD 这条链路？"目前只能答"手动 curl"。
 2. **Worker 实际是单线程。** `application.yml` 没配 `spring.rabbitmq.listener.simple.concurrency`，默认 1 个消费者。这意味着一个 60 秒的 `AGENT_TASK` 会把整个平台卡成 1 任务/分钟；更麻烦的是，简历里"拆事务避免长耗时占用数据库连接"的故事，在只有 1 条 Worker 线程时只是理论上成立——面试官问一句"你 Worker 几个线程"就能把这段讲穿。
 3. **重试是立即重投，没有退避。** `handleFailure` 写 `PENDING` 后 `publishAfterCommit`，3 次尝试在几百毫秒内打完。Agent 重启 2 秒，任务就 DEAD 了。
 4. **DLQ 在业务失败时是空的。** 业务失败走 ACK + 应用重投，只有未捕获异常才 NACK。README 演示 1 说"管理台能看到 `task.execute.dlq`"，实际看到的是空队列`FAILED` 在枚举和抢占 SQL 里，但没有任何代码写它，状态图和实现不一致。
@@ -24,10 +26,10 @@
 
 **1. 测试 + CI**
 
-- 单测`TaskExecutionService`（终态跳过、claim 失败跳过、成功、失败重投、耗尽 DEAD）`HttpCallExecutor` 的 SSRF 拦截`AgentA2aClient` 用 WireMock/MockWebServer 覆盖 COMPLETED / FAILED / 超时 / 非法 JSON 四条分支。
+- 单元测试：`TaskExecutionService`（终态跳过、claim 失败跳过、成功、失败重投、耗尽 DEAD），`HttpCallExecutor` 的 SSRF 拦截，`AgentA2aClient` 用 WireMock/MockWebServer 覆盖 COMPLETED / FAILED / 超时 / 非法 JSON 四条分支。
 - 集成测试：Testcontainers 起 MySQL + RabbitMQ，跑通 `DELAY_DEMO fail=true → retryCount=3 → DEAD`。这一条测试本身就是最好的面试讲稿。
 - Python：pytest 覆盖 `calculator` 的 AST 白名单和 `http_get` 的 SSRF 判定。
-- GitHub Actions`mvn verify` + `pytest` + `docker compose build`，README 加 badge。
+- GitHub Actions (CI持续集成)：`mvn verify` (在 backend/ 执行) + `pytest` (在装好依赖的 agent/ 环境运行，查找并执行 Python 测试) + `docker compose build` (检查 Compose 配置中带 build 的服务能否构建镜像，可验证服务能否正确启动)，README 加 badge。配置 Github 在推送代码或更新PR时启动一台运行机器，拉取代码并执行测试。
 
 **2. 延迟重试 + 让** `FAILED` **真实存在**
 
