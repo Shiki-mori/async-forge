@@ -11,7 +11,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DelayDemoExecutor implements TaskExecutor {
 
+    /*
+     * ObjectMapper是Jackson库中的一个核心类，用于读取和写入(解析和生成)JSON。
+     */
     private final ObjectMapper objectMapper;
+    /*
+     * @RequiredArgsConstructor 会为final字段生成构造方法，效果相当于：
+     * public DelayDemoExecutor(ObjectMapper objectMapper) {
+     *     this.objectMapper = objectMapper;
+     * }
+     */
 
     @Override
     public String taskType() {
