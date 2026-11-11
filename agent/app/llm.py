@@ -20,6 +20,8 @@ def get_chat_model() -> ChatOpenAI:
         model=model,
         api_key=api_key,
         base_url=base_url,
+        # 关闭思考模式
+        extra_body={"thinking": {"type": "disabled"}} if base_url.rstrip("/") == "https://api.deepseek.com" else None,
         temperature=0,
         timeout=45,
         max_retries=1,
