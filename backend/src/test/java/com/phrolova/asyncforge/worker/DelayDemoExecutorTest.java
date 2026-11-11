@@ -39,9 +39,9 @@ class DelayDemoExecutorTest {
     private DelayDemoExecutor executor;
 
     @BeforeEach
-        /*
-         * JUnit 每执行一次测试方法之前都会执行一次 setUp 方法
-         */
+    /*
+     * JUnit 每执行一次测试方法之前都会执行一次 setUp 方法
+     */
     void setUp() {
         objectMapper = new ObjectMapper();
         executor = new DelayDemoExecutor(objectMapper);
@@ -81,8 +81,7 @@ class DelayDemoExecutorTest {
         // 执行并断言异常类型
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> executor.execute(task)
-        );
+                () -> executor.execute(task));
 
         // 断言异常信息
         assertEquals("DELAY_DEMO forced failure", exception.getMessage());
