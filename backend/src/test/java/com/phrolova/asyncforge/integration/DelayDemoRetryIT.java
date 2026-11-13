@@ -79,35 +79,8 @@ class DelayDemoRetryIT {
 
     @Test
     void failingDelayTaskWaitsBetweenRetriesAndSkipsStaleMessages() {
-        // 准备：注册一个测试用户并取得 JWT。
-        ResponseEntity<JsonNode> registration = http.postForEntity(
-                "/api/auth/register",
-                Map.of(
-                        "username", "it-" + UUID.randomUUID(),
-                        "password", "test-password"
-                ),
-                JsonNode.class
-        );
-        String token = requireSuccess(registration).path("token").asText();
-        assertFalse(token.isBlank(), "注册成功后应返回 token");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
-
-        // 执行：提交一个每次执行都会失败的任务。
-        Map<String, Object> taskBody = Map.of(
-                "taskType", "DELAY_DEMO",
-                "payload", Map.of("seconds", 0, "fail", true)
-        );
-        ResponseEntity<JsonNode> submission = http.postForEntity(
-                "/api/tasks",
-                new HttpEntity<>(taskBody, headers),
-                JsonNode.class
-        );
-        long taskId = requireSuccess(submission).path("id").asLong();
-        assertTrue(taskId > 0, "创建任务后应返回有效的 id");
-
+        HttpHeaders headers = registerUser();
+        long taskId = submitDelayTask(headers, 0, true);
         HttpEntity<Void> query = new HttpEntity<>(headers);
         LocalDateTime firstFailure = awaitTaskState(taskId, query, "FAILED", 1);
         LocalDateTime secondFailure = awaitTaskState(taskId, query, "FAILED", 2);
@@ -123,6 +96,54 @@ class DelayDemoRetryIT {
 
         LocalDateTime exhausted = awaitTaskState(taskId, query, "DEAD", 3);
         assertBackoff(secondFailure, exhausted, Duration.ofSeconds(8));
+    }
+
+    @Test
+    void shortTaskFinishesWhileLongTaskIsRunning() {
+        HttpHeaders headers = registerUser();
+        HttpEntity<Void> query = new HttpEntity<>(headers);
+
+        long slowTaskId = submitDelayTask(headers, 8, false);
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> getTask(slowTaskId, query).path("status").asText().equals("RUNNING"));
+
+        long fastTaskId = submitDelayTask(headers, 0, false);
+        await().atMost(Duration.ofSeconds(5))
+                .until(() -> getTask(fastTaskId, query).path("status").asText().equals("SUCCESS"));
+        assertEquals("RUNNING", getTask(slowTaskId, query).path("status").asText());
+
+        await().atMost(Duration.ofSeconds(10))
+                .until(() -> getTask(slowTaskId, query).path("status").asText().equals("SUCCESS"));
+    }
+
+    private HttpHeaders registerUser() {
+        ResponseEntity<JsonNode> registration = http.postForEntity(
+                "/api/auth/register",
+                Map.of("username", "it-" + UUID.randomUUID(), "password", "test-password"),
+                JsonNode.class
+        );
+        String token = requireSuccess(registration).path("token").asText();
+        assertFalse(token.isBlank(), "注册成功后应返回 token");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+        return headers;
+    }
+
+    private long submitDelayTask(HttpHeaders headers, int seconds, boolean fail) {
+        Map<String, Object> taskBody = Map.of(
+                "taskType", "DELAY_DEMO",
+                "payload", Map.of("seconds", seconds, "fail", fail)
+        );
+        ResponseEntity<JsonNode> submission = http.postForEntity(
+                "/api/tasks",
+                new HttpEntity<>(taskBody, headers),
+                JsonNode.class
+        );
+        long taskId = requireSuccess(submission).path("id").asLong();
+        assertTrue(taskId > 0, "创建任务后应返回有效的 id");
+        return taskId;
     }
 
     private LocalDateTime awaitTaskState(long taskId, HttpEntity<Void> query, String expectedStatus, int expectedRetryCount) {

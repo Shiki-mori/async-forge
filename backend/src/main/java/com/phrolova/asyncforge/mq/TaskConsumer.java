@@ -21,7 +21,7 @@ public class TaskConsumer {
     /*
     注解 @RabbitListener 用于定义一个 RabbitMQ 消费者，监听指定的队列，当有消息到达时，会自动调用 consume 方法进行处理
     */
-    @RabbitListener(queues = "${async-forge.mq.queue}")
+    @RabbitListener(queues = "${async-forge.mq.queue}", concurrency = "${async-forge.worker.concurrency}")
     public void consume(TaskMessage message,
                         /*
                         参数 Channel channel 用于与 RabbitMQ 进行通信，发送ACK/NACK消息

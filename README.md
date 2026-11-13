@@ -17,6 +17,7 @@ async-forge 是一个基于 Spring Boot 和 RabbitMQ 的异步任务平台。API
 ```
 
 - **提交后投递。** API 将任务写为 `PENDING`，在事务提交后通过 `afterCommit` 把 `taskId` 投递到 RabbitMQ，避免 Worker 读到尚未提交的任务。可查看 [TaskServiceImpl](backend/src/main/java/com/phrolova/asyncforge/service/impl/TaskServiceImpl.java) 和 [TaskProducer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskProducer.java)。
+- **并发消费。** 每个后端实例默认启动 20 个消费者处理 `task.execute.q`。`prefetch=1` 时每个消费者最多持有一条未确认消息，空闲消费者可以在慢任务执行期间处理其他任务。任务完成顺序取决于各自的执行时长。死信队列由独立的单消费者处理。可查看 [TaskConsumer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskConsumer.java)。
 - **条件抢占与短事务。** Worker 用条件更新获取执行权，抢占成功后才调用执行器。HTTP 和 A2A 调用在数据库事务外执行，执行结果再用短事务回写。可查看 [TaskMapper](backend/src/main/java/com/phrolova/asyncforge/mapper/TaskMapper.java) 和 [TaskExecutionService](backend/src/main/java/com/phrolova/asyncforge/service/TaskExecutionService.java)。
 - **通过执行器扩展任务类型。** Worker 按任务类型选择执行器。`AGENT_TASK` 通过 A2A 调用 Python Agent，由 LangGraph 调度 MCP 工具 `http_get` 和 `calculator`。Java 在写入 `SUCCESS` 前校验 `summary` 为非空字符串、`toolCalls` 为数组。调用超时、Agent 返回失败和结果校验失败均走平台的重试流程。可查看 [TaskExecutorRegistry](backend/src/main/java/com/phrolova/asyncforge/worker/TaskExecutorRegistry.java)、[AgentTaskExecutor](backend/src/main/java/com/phrolova/asyncforge/worker/AgentTaskExecutor.java) 和 [Agent 执行图](agent/app/graph.py)。
 
@@ -34,6 +35,8 @@ docker compose up -d --build
 ```
 
 Compose 会启动 MySQL、RabbitMQ、Python Agent、后端与前端。MySQL 初始化数据卷时会执行 [schema.sql](database/sql/schema.sql)。
+
+在 `deploy/.env` 中设置 `TASK_WORKER_CONCURRENCY` 可调整每个后端实例的执行队列消费者数，例如 `TASK_WORKER_CONCURRENCY=2`。如果使用早期复制的 `deploy/docker-compose.yml`，先将模板中 `backend.environment` 下的同名配置同步到本地文件。修改后在 `deploy/` 运行 `docker compose up -d --build backend`。本地用 Maven 启动时，后端直接读取同名环境变量。
 
 ### 在控制台体验任务执行
 
