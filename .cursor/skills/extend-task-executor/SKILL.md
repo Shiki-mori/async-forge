@@ -22,11 +22,11 @@ description: Extends async-forge with a new TaskType via TaskExecutor registry, 
 1. `TaskType` 增加 `AGENT_TASK`。未知类型仍返回 `TASK_TYPE_UNSUPPORTED`。
 2. 创建路径：`instruction` trim 后非空（建议 ≤2000）否则 400。不要在 Java 里解析用户 URL。执行器作为第二道闸（空 instruction 抛错，会进重试）。
 3. 拆 `TaskExecutionService.execute`：
-   - 短事务：加载、跳过终态、`claimForExecution` → `RUNNING`
+   - 短事务：`claimForExecution` 条件更新为 `RUNNING`，成功后读取任务，未抢占则跳过
    - **无事务**：`taskExecutorRegistry.get(...).execute(task)`（含 A2A / HTTP）
    - 短事务：写 `SUCCESS` + `result_json`，或走现有 `handleFailure`
    - `handleFailure` 遵循 [Worker / MQ 规则](../../rules/task-worker-mq.mdc) 中的状态机与延迟重试拓扑，重试消息在状态事务提交后投递
-   - 不要改松 `claimForExecution`（`PENDING` / `FAILED` → `RUNNING`）
+   - 保留 Worker / MQ 规则中的消息头与状态匹配条件，防止旧消息提前抢占等待重试的任务
 4. `AgentTaskExecutor`：
    - `taskType()` 返回 `"AGENT_TASK"`
    - 解析 payload；`forceFail` **仍走 A2A**，禁止 Java 直接 throw 绕过 Python

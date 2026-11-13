@@ -9,5 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TaskMessage {
 
+    public static final String RETRY_COUNT_HEADER = "task-retry-count";
+
     private Long taskId;
 }

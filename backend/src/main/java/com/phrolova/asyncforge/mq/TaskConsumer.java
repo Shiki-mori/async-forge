@@ -28,11 +28,12 @@ public class TaskConsumer {
                         deliveryTag 消息投递标签，用于标识消息的唯一标识
                         */
                         Channel channel,
-                        @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag) throws IOException {
+                        @Header(AmqpHeaders.DELIVERY_TAG) long deliveryTag,
+                        @Header(name = TaskMessage.RETRY_COUNT_HEADER, required = false) Integer retryCount) throws IOException {
         Long taskId = message.getTaskId();
-        log.info("Consuming task message, taskId={}", taskId);
+        log.info("Consuming task message, taskId={}, retryCount={}", taskId, retryCount);
         try {
-            taskExecutionService.execute(taskId);
+            taskExecutionService.execute(taskId, retryCount);
             // 发送ACK消息，确认消息已成功处理
             channel.basicAck(deliveryTag, false);
         } catch (Exception ex) {

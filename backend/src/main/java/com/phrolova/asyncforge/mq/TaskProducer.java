@@ -37,13 +37,27 @@ public class TaskProducer {
      * 若 DB 操作之后、commit 之前抛出异常，则事务回滚，task不入库，不会执行 afterCommit。
      */
     public void publishAfterCommit(Long taskId) {
-        // TransactionSynchronizationManager Spring提供的事务同步工具
-        // 在当前活跃事务中注册事务同步回调，在事务生命周期的特定时点执行
+        afterCommit(() -> publish(taskId));
+    }
+
+    public void publishRetryAfterCommit(Long taskId, int retryCount) {
+        String routingKey = retryCount == 1
+                ? mqProperties.getRetry2sRoutingKey()
+                : mqProperties.getRetry8sRoutingKey();
+        afterCommit(() -> {
+            rabbitTemplate.convertAndSend(mqProperties.getExchange(), routingKey, new TaskMessage(taskId), message -> {
+                message.getMessageProperties().setHeader(TaskMessage.RETRY_COUNT_HEADER, retryCount);
+                return message;
+            });
+            log.info("Published retry to MQ, taskId={}, retryCount={}, routingKey={}", taskId, retryCount, routingKey);
+        });
+    }
+
+    private void afterCommit(Runnable action) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
-            // 数据库事务提交后，才发布消息到RabbitMQ
             public void afterCommit() {
-                publish(taskId);
+                action.run();
             }
         });
     }

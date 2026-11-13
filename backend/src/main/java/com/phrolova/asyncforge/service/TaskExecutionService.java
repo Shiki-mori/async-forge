@@ -1,5 +1,6 @@
 package com.phrolova.asyncforge.service;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.phrolova.asyncforge.entity.Task;
 import com.phrolova.asyncforge.entity.TaskStatus;
 import com.phrolova.asyncforge.mapper.TaskMapper;
@@ -10,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -30,8 +33,8 @@ public class TaskExecutionService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
-    public void execute(Long taskId) {
-        Task claimed = claimInShortTransaction(taskId);
+    public void execute(Long taskId, Integer retryCount) {
+        Task claimed = claimInShortTransaction(taskId, retryCount);
         if (claimed == null) {
             return;
         }
@@ -43,42 +46,27 @@ public class TaskExecutionService {
             log.info("Task succeeded, taskId={}", taskId);
         } catch (Exception ex) {
             log.warn("Task execution failed, taskId={}", taskId, ex);
-            transactionTemplate.executeWithoutResult(status -> handleFailure(claimed, ex.getMessage()));
+            String errorMessage = Objects.toString(ex.getMessage(), ex.getClass().getSimpleName());
+            transactionTemplate.executeWithoutResult(status -> handleFailure(claimed, errorMessage));
         }
     }
 
-    private Task claimInShortTransaction(Long taskId) {
+    private Task claimInShortTransaction(Long taskId, Integer retryCount) {
         return transactionTemplate.execute(status -> {
-            Task task = taskMapper.selectById(taskId);
-            if (task == null) {
-                log.warn("Task not found, taskId={}", taskId);
+            if (taskMapper.claimForExecution(taskId, retryCount) == 0) {
+                log.info("Skip unclaimable task message, taskId={}, retryCount={}", taskId, retryCount);
                 return null;
             }
-
-            if (TaskStatus.SUCCESS.name().equals(task.getStatus())
-                    || TaskStatus.DEAD.name().equals(task.getStatus())) {
-                log.info("Skip duplicate consumption for terminal task, taskId={}, status={}", taskId, task.getStatus());
-                return null;
-            }
-
-            int claimed = taskMapper.claimForExecution(taskId, TaskStatus.RUNNING.name());
-            if (claimed == 0) {
-                log.info("Skip duplicate or in-flight task, taskId={}, status={}", taskId, task.getStatus());
-                return null;
-            }
-            return task;
+            return taskMapper.selectById(taskId);
         });
     }
 
     private void markSuccessInShortTransaction(Long taskId, String resultJson) {
-        transactionTemplate.executeWithoutResult(status -> {
-            Task success = new Task();
-            success.setId(taskId);
-            success.setStatus(TaskStatus.SUCCESS.name());
-            success.setResultJson(resultJson);
-            success.setErrorMessage(null);
-            taskMapper.updateById(success);
-        });
+        transactionTemplate.executeWithoutResult(status -> taskMapper.update(Wrappers.<Task>lambdaUpdate()
+                .eq(Task::getId, taskId)
+                .set(Task::getStatus, TaskStatus.SUCCESS.name())
+                .set(Task::getResultJson, resultJson)
+                .set(Task::getErrorMessage, null)));
     }
 
     private void handleFailure(Task task, String errorMessage) {
@@ -89,16 +77,13 @@ public class TaskExecutionService {
         update.setId(task.getId());
         update.setRetryCount(nextRetryCount);
         update.setErrorMessage(errorMessage);
+        update.setStatus(exhausted ? TaskStatus.DEAD.name() : TaskStatus.FAILED.name());
+        taskMapper.updateById(update);
 
         if (exhausted) {
-            update.setStatus(TaskStatus.DEAD.name());
-            taskMapper.updateById(update);
             log.warn("Task retries exhausted, taskId={}, retryCount={}", task.getId(), nextRetryCount);
         } else {
-            update.setStatus(TaskStatus.PENDING.name());
-            taskMapper.updateById(update);
-            taskProducer.publishAfterCommit(task.getId());
-            log.info("Task failed and scheduled for retry, taskId={}, retryCount={}", task.getId(), nextRetryCount);
+            taskProducer.publishRetryAfterCommit(task.getId(), nextRetryCount);
         }
     }
 }

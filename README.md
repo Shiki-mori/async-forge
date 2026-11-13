@@ -116,13 +116,13 @@ curl -sS -X POST http://localhost:8090/api/tasks \
 
 ```text
 PENDING ──抢占──► RUNNING ──成功────────────────► SUCCESS
-                    ├──执行失败且未达阈值───────► PENDING（提交后重新投递）
+                    ├──执行失败且未达阈值───────► FAILED ──延迟消息抢占──► RUNNING
                     └──执行失败且达到阈值───────► DEAD
 ```
 
-- **抢占。** 条件更新仅允许 `PENDING` 或 `FAILED` 进入 `RUNNING`。`SUCCESS`、`DEAD` 和抢占失败的任务会跳过执行。当前业务失败处理直接写回 `PENDING` 或 `DEAD`。
-- **有限重试。** `retryCount` 记录累计执行失败次数。默认 `max_retry=3`，首次失败后最多再执行两次。业务失败处理完成后，消费者 ACK 当前消息。
-- **延迟重试队列。** 后端声明两条没有消费者的持久化队列。`task.exchange` 使用 `task.retry.2s` 将消息路由到 `task.retry.2s.q`（TTL 2 秒），使用 `task.retry.8s` 路由到 `task.retry.8s.q`（TTL 8 秒）。消息到期后经 `task.exchange` 和 `task.execute` 回到 `task.execute.q`。当前业务重试仍在写入 `PENDING` 后立即重投，这两条队列供后续接入延迟投递使用。
+- **抢占。** 无 `task-retry-count` 消息头的消息只能抢占 `PENDING`。带该消息头的消息只能抢占 `FAILED` 且 `retry_count` 与消息头一致的任务。状态和次数由同一条条件更新校验，抢占失败时跳过执行。
+- **有限重试。** `retryCount` 记录累计执行失败次数。默认 `max_retry=3`，第一次失败后等待 2 秒，第二次失败后等待 8 秒，第三次失败写 `DEAD`。未耗尽时先提交 `FAILED` 和失败原因，再投递延迟消息。业务失败处理完成后，消费者 ACK 当前消息。重试成功时清空上次的失败原因。
+- **延迟重试队列。** 后端声明两条没有消费者的持久化队列。`task.exchange` 使用 `task.retry.2s` 将消息路由到 `task.retry.2s.q`（TTL 2 秒），使用 `task.retry.8s` 路由到 `task.retry.8s.q`（TTL 8 秒）。消息到期后经 `task.exchange` 和 `task.execute` 回到 `task.execute.q`。
 - **RabbitMQ 死信。** 异常传播到消费者时，消费者发出 `NACK(requeue=false)`，RabbitMQ 按死信配置将消息路由到 `task.execute.dlq`。死信监听器会将尚未标记为 `DEAD` 的对应任务收口并确认消息。管理台中可以查看死信队列和路由配置，强制失败演示则通过任务状态与错误信息验证。可查看 [TaskConsumer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskConsumer.java)、[RabbitMqConfig](backend/src/main/java/com/phrolova/asyncforge/config/RabbitMqConfig.java) 和 [DlqListener](backend/src/main/java/com/phrolova/asyncforge/mq/DlqListener.java)。
 
 ## 本地调试
