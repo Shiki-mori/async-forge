@@ -1,14 +1,15 @@
 ---
 description: 任务执行器注册表、状态机、拆事务、MQ/DLQ 与 AGENT_TASK Worker
-globs: backend/**/worker/**/*.java,backend/**/mq/**/*.java,backend/**/service/TaskExecutionService.java,backend/**/service/impl/TaskServiceImpl.java,backend/**/mapper/TaskMapper.java,backend/**/entity/TaskType.java,backend/**/entity/TaskStatus.java,backend/**/agent/**/*.java
+globs: backend/**/worker/**/*.java,backend/**/mq/**/*.java,backend/**/config/RabbitMqConfig.java,backend/**/config/MqProperties.java,backend/**/service/TaskExecutionService.java,backend/**/service/impl/TaskServiceImpl.java,backend/**/mapper/TaskMapper.java,backend/**/entity/TaskType.java,backend/**/entity/TaskStatus.java,backend/**/agent/**/*.java
 alwaysApply: false
 ---
 
 # Worker / MQ
 
 - 勿改 `TaskExecutor` 接口语义（`taskType()` + `execute(Task)`）。新类型 = 新 `@Component` + `TaskType` 枚举，禁止巨型 switch。
-- 状态机：`PENDING → RUNNING → SUCCESS`；失败且未耗尽重试 → `PENDING` 再入队；耗尽 → `DEAD`。Agent 必须复用 `handleFailure`，禁止旁路。
-- **拆事务**：claim / 写 SUCCESS 或 DEAD 用短事务；`executor.execute()`（含 A2A）在事务外。`publishAfterCommit` 语义保留（写 PENDING 的事务提交后再投递）。
+- 状态机：`PENDING → RUNNING → SUCCESS`；失败耗尽 → `DEAD`。延迟投递接入前，未耗尽的失败仍写 `PENDING` 并立即重投；接入后写 `FAILED`，等待延迟消息重新抢占。`retryCount` 记录累计失败次数，默认 `max_retry=3` 对应最多三次执行。Agent 必须复用 `handleFailure`，禁止旁路。
+- **拆事务**：claim 和结果回写使用短事务；`executor.execute()`（含 A2A）在事务外。首次投递和重试投递均在对应的状态事务提交后执行。
+- **延迟重试拓扑**：`task.exchange` 按 `task.retry.2s` / `task.retry.8s` 路由到 `task.retry.2s.q` / `task.retry.8s.q`。两条持久化队列无消费者，`x-message-ttl` 分别为 2000 / 8000 毫秒，到期经 `task.exchange` 和 `task.execute` 回到执行队列。接入延迟投递后，第一次和第二次失败分别使用这两个档位。
 - 不要改松 `claimForExecution`（仅 `PENDING` / `FAILED` → `RUNNING`）。
 - 手动 ACK / NACK 与队列名（`task.execute.q`、`task.execute.dlq`）不要顺便改；改 MQ 必须同步 README。Agent 仍是一条 `taskId` 消息。
 - `AgentTaskExecutor.taskType()` 返回 `"AGENT_TASK"`。`forceFail` 仍走 A2A，Java 不要直接 throw 绕过 Python。成功须校验非空 `summary` 且 `toolCalls` 为数组；执行器不更新任务状态。

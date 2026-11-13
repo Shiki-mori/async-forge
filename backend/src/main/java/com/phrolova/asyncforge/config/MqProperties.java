@@ -12,6 +12,10 @@ public class MqProperties {
     private String exchange;
     private String queue;
     private String routingKey;
+    private String retry2sQueue;
+    private String retry2sRoutingKey;
+    private String retry8sQueue;
+    private String retry8sRoutingKey;
     private String dlxExchange;
     private String dlq;
     private String dlqRoutingKey;

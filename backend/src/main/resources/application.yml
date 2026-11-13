@@ -42,6 +42,10 @@ async-forge:
     exchange: task.exchange
     queue: task.execute.q
     routing-key: task.execute
+    retry-2s-queue: task.retry.2s.q
+    retry-2s-routing-key: task.retry.2s
+    retry-8s-queue: task.retry.8s.q
+    retry-8s-routing-key: task.retry.8s
     dlx-exchange: task.dlx
     dlq: task.execute.dlq
     dlq-routing-key: task.execute.dlq

@@ -25,7 +25,7 @@ description: Extends async-forge with a new TaskType via TaskExecutor registry, 
    - 短事务：加载、跳过终态、`claimForExecution` → `RUNNING`
    - **无事务**：`taskExecutorRegistry.get(...).execute(task)`（含 A2A / HTTP）
    - 短事务：写 `SUCCESS` + `result_json`，或走现有 `handleFailure`
-   - `handleFailure` 写 `PENDING` 后须 `publishAfterCommit`（事务提交后再投递）
+   - `handleFailure` 遵循 [Worker / MQ 规则](../../rules/task-worker-mq.mdc) 中的状态机与延迟重试拓扑，重试消息在状态事务提交后投递
    - 不要改松 `claimForExecution`（`PENDING` / `FAILED` → `RUNNING`）
 4. `AgentTaskExecutor`：
    - `taskType()` 返回 `"AGENT_TASK"`

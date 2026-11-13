@@ -6,6 +6,7 @@ import com.phrolova.asyncforge.common.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
@@ -61,6 +62,26 @@ public class RabbitMqConfig {
         return BindingBuilder.bind(taskQueue())
                 .to(taskExchange())
                 .with(mqProperties.getRoutingKey());
+    }
+
+    @Bean
+    public Declarables taskRetryTopology() {
+        Queue retry2sQueue = retryQueue(mqProperties.getRetry2sQueue(), 2_000);
+        Queue retry8sQueue = retryQueue(mqProperties.getRetry8sQueue(), 8_000);
+        return new Declarables(
+                retry2sQueue,
+                retry8sQueue,
+                BindingBuilder.bind(retry2sQueue).to(taskExchange()).with(mqProperties.getRetry2sRoutingKey()),
+                BindingBuilder.bind(retry8sQueue).to(taskExchange()).with(mqProperties.getRetry8sRoutingKey())
+        );
+    }
+
+    private Queue retryQueue(String name, int ttlMillis) {
+        return QueueBuilder.durable(name)
+                .ttl(ttlMillis)
+                .deadLetterExchange(mqProperties.getExchange())
+                .deadLetterRoutingKey(mqProperties.getRoutingKey())
+                .build();
     }
 
     // 将死信队列绑定到死信交换机
