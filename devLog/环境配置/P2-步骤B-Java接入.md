@@ -273,7 +273,7 @@ result.task.status.message.parts[].text               → 同一份 JSON（备�
 
 **不**在这个类里 `updateById` 任务状态。成功 / 重试 / 死信全部由 `TaskExecutionService` 统一写。否则 Agent 就会旁路现有状态机。
 
-步骤 C 换成真工具后，Java 这段校验 **不用改**：真结果同样要有 `summary` + `toolCalls` 数组；那时数组里会有 `http_get`。不要拿 [demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 第 2 条当步骤 B 的验收（那条要求 `toolCalls` 含 `http_get`）。
+步骤 C 换成真工具后，Java 这段校验 **不用改**：真结果同样要有 `summary` + `toolCalls` 数组；那时数组里会有 `http_get`。不要拿 [demos.md](../归档/P2-AGENT_TASK/demos.md) 第 2 条当步骤 B 的验收（那条要求 `toolCalls` 含 `http_get`）。
 
 ### 4.6 `TaskExecutionService.java`：拆事务（本步最重要的结构改动）
 
@@ -358,7 +358,7 @@ curl -s -X POST http://localhost:8090/api/tasks \
 | 文件 | 改动 |
 |------|------|
 | `.cursor/skills/extend-task-executor/SKILL.md` | Client 发 `SendMessage`，不再写过时的 `message/send` |
-| `.cursor/skills/implement-p2-agent/SKILL.md` | F20/F21/F22/F25/F26/F27 勾成完成 |
+| [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) | F20/F21/F22/F25/F26/F27 勾成完成 |
 | `AGENTS.md` | 当前阶段改为 B 已完成，下一轮做 C |
 | `README.md` | 补充 `AGENT_TASK` curl；去掉「尚未接入 Java」 |
 | `devLog/交接/P2-下一步-步骤B-Java接入.md` | 标记已完成 |

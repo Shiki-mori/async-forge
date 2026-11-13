@@ -19,7 +19,7 @@ description: Prepares deep-dive interview answers for the async-forge portfolio 
 1. `mkdir -p /home/phrolova/CodeProject/async-forge/PRIVATE/面试`
 2. 用 Read 工具读简历绝对路径
 3. Read 失败则 Shell：`cat "/home/phrolova/CodeProject/async-forge/PRIVATE/简历描述.md"`
-4. 仍失败则停，告诉用户补文件，不要凭 `implement-p2-agent` 里的旧简历稿编造
+4. 仍失败则停，告诉用户补文件，不要凭 P2 交付归档里的旧简历稿编造
 
 已有 `PRIVATE/面试/*.md` 时先读再改，避免覆盖用户手改。
 

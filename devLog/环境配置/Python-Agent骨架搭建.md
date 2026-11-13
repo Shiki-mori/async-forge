@@ -49,7 +49,7 @@ flowchart LR
 
 ## 3. 目录怎么铺
 
-按 skill `implement-p2-agent` 的步骤 A 固定结构。占位文件是为了步骤 C 不必再改目录：
+按 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) 的步骤 A 固定结构。占位文件是为了步骤 C 不必再改目录：
 
 ```text
 agent/

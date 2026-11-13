@@ -6,7 +6,7 @@
 
 ## 0. 下一轮 Agent 开场必做
 
-1. 读 [implement-p2-agent](../../.cursor/skills/implement-p2-agent/SKILL.md)（A→D 硬顺序）。
+1. 读 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md)（A→D 硬顺序）。
 2. 读 [extend-task-executor](../../.cursor/skills/extend-task-executor/SKILL.md)（步骤 B 的操作清单）。
 3. 读 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 与 [result-schema.md](../../.cursor/skills/python-a2a-mcp/result-schema.md)。
 4. **只做步骤 B。** 不要开始 LangGraph / MCP（C），不要改控制台表单（D），不要重做 Python 骨架（A）。
@@ -69,7 +69,7 @@ Python stub 成功体（步骤 B 联调期望）：
 
 SDK 成功响应里 JSON 在 **artifact `result_json` 的 text** 和 **status.message 的 text** 两处都有。Client 抽出文本即可，不要在 Client 里写摘要逻辑。
 
-**步骤 B 不要拿 [demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 第 2 条当验收。** 那条要求 `toolCalls` 含 `http_get`，属于步骤 C 之后。步骤 B 成功路径是 stub：`toolCalls` 为空数组也合法（result-schema 允许）。
+**步骤 B 不要拿 [demos.md](../归档/P2-AGENT_TASK/demos.md) 第 2 条当验收。** 那条要求 `toolCalls` 含 `http_get`，属于步骤 C 之后。步骤 B 成功路径是 stub：`toolCalls` 为空数组也合法（result-schema 允许）。
 
 ## 3. 步骤 B 要做什么
 
@@ -148,7 +148,7 @@ Agent 与 Java 都要能连上（本机 Agent：`cd agent && .venv/bin/uvicorn a
 ## 6. 给人类：B 之后还有什么
 
 - **C**：按 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 接真 MCP（`http_get` + `calculator`）和 LangGraph 3～5 节点；去掉固定 JSON；httpbin 指令做成功演示。需要 `AI_*` 环境变量。
-- **D**：控制台表单 + README 抄 [demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 三条演示。
+- **D**：控制台表单 + README 抄 [demos.md](../归档/P2-AGENT_TASK/demos.md) 三条演示。
 
 ## 7. 人类上下文（下一轮不必再教 Python 入门）
 

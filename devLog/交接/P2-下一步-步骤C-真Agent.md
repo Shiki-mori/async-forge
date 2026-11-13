@@ -5,7 +5,7 @@
 
 ## 0. 下一轮 Agent 开场必做
 
-1. 读 [implement-p2-agent](../../.cursor/skills/implement-p2-agent/SKILL.md)（A→D 硬顺序）。
+1. 读 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md)（A→D 硬顺序）。
 2. 读 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 以及 [langgraph-mcp.md](../../.cursor/skills/python-a2a-mcp/langgraph-mcp.md)、[result-schema.md](../../.cursor/skills/python-a2a-mcp/result-schema.md)。
 3. **只做步骤 C。** 不要改 Java 执行器 / 拆事务（B 已完成），不要改控制台表单（D）。
 
@@ -60,7 +60,7 @@ F20–F29 对照：
 5. `finalize` 校验 schema；不得把模型长文当 `summary`。
 6. **去掉** `graph.py` 的固定成功 stub。`forceFail=true` 仍要 A2A Task failed。
 7. 需要 `AI_BASE_URL` / `AI_API_KEY` / `AI_MODEL`（OpenAI 兼容 Chat Completions）。密钥不入库、不进 Git、不打日志。
-8. 成功演示指令用 httpbin（见 [demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 第 2 条）：`result.toolCalls` 须含 `http_get`。
+8. 成功演示指令用 httpbin（见 [demos.md](../归档/P2-AGENT_TASK/demos.md) 第 2 条）：`result.toolCalls` 须含 `http_get`。
 
 Java 侧 **不必**为 C 再改执行器，除非 result schema 对不齐（先改 skill 再改代码）。
 

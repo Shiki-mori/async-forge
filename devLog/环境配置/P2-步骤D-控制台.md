@@ -1,6 +1,6 @@
 # 控制台与 README（P2 步骤 D）
 
-本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 AGENT_TASK 在浏览器里怎么走**。启动与三条 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤D.md](../验证/P2-步骤D.md)；规格以 skill [implement-p2-agent](../../.cursor/skills/implement-p2-agent/SKILL.md) 步骤 D 与 [frontend-console.mdc](../../.cursor/rules/frontend-console.mdc) 为准。
+本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 AGENT_TASK 在浏览器里怎么走**。启动与三条 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤D.md](../验证/P2-步骤D.md)；交付时的规格见 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) 步骤 D 与 [frontend-console.mdc](../../.cursor/rules/frontend-console.mdc)。
 
 Java 执行器（步骤 B）**没有改**。Python LangGraph / MCP（步骤 C）**没有改**。前端没有新页面、没有聊天窗、没有流式打字，浏览器也 **不** 请求 `AGENT_BASE_URL`。
 
@@ -18,7 +18,7 @@ Java 执行器（步骤 B）**没有改**。Python LangGraph / MCP（步骤 C）
 
 - 控制台提交后轮询到终态，Result 能看到 `summary` / `toolCalls`，或 Error 能看到 `errorMessage`
 - README 三条：`DELAY_DEMO` 死信、Agent httpbin 成功、Agent `forceFail` → `DEAD`
-- 默认指令与 [demos.md](../../.cursor/skills/implement-p2-agent/demos.md) 的 httpbin 文案对齐
+- 默认指令与 [demos.md](../归档/P2-AGENT_TASK/demos.md) 的 httpbin 文案对齐
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,7 @@ flowchart LR
 |------|----------|
 | [README.md](../../README.md) | 架构图、三条可抄演示、去掉 stub / 「步骤 D 还没做」 |
 | [AGENTS.md](../../AGENTS.md) | 当前阶段改为 A–D 完成；入口改到步骤 D 验证 |
-| [implement-p2-agent/SKILL.md](../../.cursor/skills/implement-p2-agent/SKILL.md) | 勾选 F28 / F29 |
+| [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) | 勾选 F28 / F29 |
 | [验证/P2-步骤D.md](../验证/P2-步骤D.md) | 控制台与 README 验收步骤 |
 | 交接 C / D | C 标明 D 也完成；D 从「下一轮待做」改成「已落地」 |
 
@@ -223,7 +223,7 @@ Error    → selected.errorMessage            // 仅当后端写了才出现
 | 文件 | 要点 |
 |------|------|
 | `AGENTS.md` | 「给人类」入口从「下一轮做 D」改成「步骤 D 验证」；当前阶段写明 A–D 完成、F20–F29 勾完 |
-| `implement-p2-agent/SKILL.md` | F28 / F29 打勾。工序正文仍保留「步骤 D 要改 types + ConsoleView + README」，作为历史规格，不是待办 |
+| [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) | F28 / F29 打勾。工序正文仍保留「步骤 D 要改 types + ConsoleView + README」，作为历史规格，不是待办 |
 | `devLog/验证/P2-步骤D.md` | 人能跟着点的清单：下拉、默认指令、Result/Error、三条 curl |
 | `devLog/交接/P2-下一步-步骤D-控制台.md` | 标题改为已完成；删掉「开场必做只做 D」；保留落地清单与明确不要做 |
 | `devLog/交接/P2-下一步-步骤C-真Agent.md` | 文首改成「D 也已完成」，正文仍是 C 开工时的坑，避免两份交接抢「下一步」 |
