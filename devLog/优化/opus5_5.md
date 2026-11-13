@@ -27,19 +27,21 @@
 **1. 测试 + CI**
 
 - 单元测试：`TaskExecutionService`（终态跳过、claim 失败跳过、成功、失败重投、耗尽 DEAD），`HttpCallExecutor` 的 SSRF 拦截，`AgentA2aClient` 用 WireMock/MockWebServer 覆盖 COMPLETED / FAILED / 超时 / 非法 JSON 四条分支。
-- 集成测试：Testcontainers 起 MySQL + RabbitMQ，跑通 `DELAY_DEMO fail=true → retryCount=3 → DEAD`。这一条测试本身就是最好的面试讲稿。
+- **已完成** · 集成测试：Testcontainers 起 MySQL + RabbitMQ，跑通 `DELAY_DEMO fail=true → retryCount=3 → DEAD`。这一条测试本身就是最好的面试讲稿。`b512663` 补充验证了 `FAILED/1 → FAILED/2 → DEAD/3`、两轮退避和旧消息重投。
 - Python：pytest 覆盖 `calculator` 的 AST 白名单和 `http_get` 的 SSRF 判定。
 - GitHub Actions (CI持续集成)：`mvn verify` (在 backend/ 执行) + `pytest` (在装好依赖的 agent/ 环境运行，查找并执行 Python 测试) + `docker compose build` (检查 Compose 配置中带 build 的服务能否构建镜像，可验证服务能否正确启动)，README 加 badge。配置 Github 在推送代码或更新PR时启动一台运行机器，拉取代码并执行测试。
 
-**2. 延迟重试 + 让** `FAILED` **真实存在**
+**2. 延迟重试 + 让** `FAILED` **真实存在 · 已完成**
+
+本轮落地使用 `task.retry.2s.q` 和 `task.retry.8s.q` 两条固定 TTL 队列，消息到期后回到执行队列（`c2ec7c7`）。未耗尽时写 `FAILED`，提交后投递重试消息。Worker 按 `task-retry-count` 与数据库的 `retry_count` 匹配抢占（`332df6e`）。控制台在 `FAILED` 期间继续轮询（`b512663`）。
 
 - 加一个 `task.retry.q`，无消费者`x-dead-letter-exchange` 指回 `task.exchange`，发消息时按 `retryCount` 设置 per-message `expiration`（如 2s / 8s / 32s），实现指数退避，不需要插件。
-- 失败未耗尽时写 `FAILED`（而不是 `PENDING`）`claimForExecution` 已经接受 `FAILED → RUNNING`，正好把枚举和状态图对上。
+- 失败未耗尽时写 `FAILED`（而不是 `PENDING`），`claimForExecution` 已经接受 `FAILED → RUNNING`，正好把枚举和状态图对上。
 - 面试讲点：为什么不用 `Thread.sleep` 退避（占 Worker 线程）、TTL 队列的队头阻塞问题、为什么分级队列或延迟插件能解决。
 
 **3. 耗尽时消息真正进 DLQ**
 
-- `execute` 返回一个 outcome`SUCCESS / RETRY / EXHAUSTED`）`TaskConsumer` 在 `EXHAUSTED` 时 NACK `requeue=false`，消息经 DLX 落到 `task.execute.dlqDlqListener` 保持幂等。
+- `execute` 返回一个 outcome（`SUCCESS / RETRY / EXHAUSTED`）。`TaskConsumer` 在 `EXHAUSTED` 时 NACK `requeue=false`，消息经 DLX 落到 `task.execute.dlqDlqListener` 保持幂等。
 - 这样 DLQ 变成可检查、可回放的死信归档，README 演示 1 的描述就是真的了。
 
 **4. Worker 并发可配置**
@@ -79,7 +81,7 @@
 - `server.shutdown: graceful` + 监听容器 `shutdown-timeout`，让 SIGTERM 等待在途任务，缩小 RUNNING 悬挂窗口。
 - 非 dev profile 下 JWT secret 是默认值时直接启动失败。
 - Python 侧 `run_instruction` 每次都 `_create_mcp_client()` + 新 stdio 会话，等于每个任务 fork 一个 MCP 子进程，可以改成应用生命周期内复用一个会话。
-- `max_retry=3` 实际是"3 次尝试、2 次重试"，要么改名要么在文档里说清。
+- **已完成** · `max_retry=3` 实际是"3 次尝试、2 次重试"，要么改名要么在文档里说清。[README 的有限重试说明](../../README.md#任务状态与消息确认)已写明两轮退避和第三次失败进入 `DEAD`。
 
 
 
