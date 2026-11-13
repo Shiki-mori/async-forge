@@ -33,7 +33,7 @@ const forceFail = ref(false)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const hasActive = computed(() =>
-  tasks.value.some((t) => t.status === 'PENDING' || t.status === 'RUNNING'),
+  tasks.value.some((t) => t.status === 'PENDING' || t.status === 'RUNNING' || t.status === 'FAILED'),
 )
 
 async function refreshList() {

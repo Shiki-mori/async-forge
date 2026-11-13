@@ -1,7 +1,10 @@
 package com.phrolova.asyncforge.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.phrolova.asyncforge.config.MqProperties;
+import com.phrolova.asyncforge.mq.TaskMessage;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -20,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -67,8 +71,14 @@ class DelayDemoRetryIT {
     @Autowired
     private TestRestTemplate http;
 
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private MqProperties mqProperties;
+
     @Test
-    void failingDelayTaskBecomesDeadAfterThreeFailures() {
+    void failingDelayTaskWaitsBetweenRetriesAndSkipsStaleMessages() {
         // 准备：注册一个测试用户并取得 JWT。
         ResponseEntity<JsonNode> registration = http.postForEntity(
                 "/api/auth/register",
@@ -98,25 +108,45 @@ class DelayDemoRetryIT {
         long taskId = requireSuccess(submission).path("id").asLong();
         assertTrue(taskId > 0, "创建任务后应返回有效的 id");
 
-        // 断言：按任务 ID 查询，等待 Worker 完成有限重试。
         HttpEntity<Void> query = new HttpEntity<>(headers);
-        await()
-                .atMost(Duration.ofSeconds(15))
-                .pollInterval(Duration.ofMillis(200))
-                .untilAsserted(() -> {
-                    ResponseEntity<JsonNode> response = http.exchange(
-                            "/api/tasks/{id}",
-                            HttpMethod.GET,
-                            query,
-                            JsonNode.class,
-                            taskId
-                    );
-                    JsonNode task = requireSuccess(response);
+        LocalDateTime firstFailure = awaitTaskState(taskId, query, "FAILED", 1);
+        LocalDateTime secondFailure = awaitTaskState(taskId, query, "FAILED", 2);
+        assertBackoff(firstFailure, secondFailure, Duration.ofSeconds(2));
 
-                    assertEquals("DEAD", task.path("status").asText(), task.toString());
-                    assertEquals(3, task.path("retryCount").asInt(-1));
-                    assertEquals("DELAY_DEMO forced failure", task.path("errorMessage").asText());
-                });
+        // 在第二轮退避期间，把首投和上一轮重试消息直接重投到执行队列。
+        TaskMessage duplicate = new TaskMessage(taskId);
+        rabbitTemplate.convertAndSend(mqProperties.getExchange(), mqProperties.getRoutingKey(), duplicate);
+        rabbitTemplate.convertAndSend(mqProperties.getExchange(), mqProperties.getRoutingKey(), duplicate, message -> {
+            message.getMessageProperties().setHeader(TaskMessage.RETRY_COUNT_HEADER, 1);
+            return message;
+        });
+
+        LocalDateTime exhausted = awaitTaskState(taskId, query, "DEAD", 3);
+        assertBackoff(secondFailure, exhausted, Duration.ofSeconds(8));
+    }
+
+    private LocalDateTime awaitTaskState(long taskId, HttpEntity<Void> query, String expectedStatus, int expectedRetryCount) {
+        JsonNode task = await()
+                .atMost(Duration.ofSeconds(15))
+                .pollInterval(Duration.ofMillis(100))
+                .until(() -> getTask(taskId, query), response ->
+                        expectedStatus.equals(response.path("status").asText())
+                                && expectedRetryCount == response.path("retryCount").asInt(-1));
+        assertEquals("DELAY_DEMO forced failure", task.path("errorMessage").asText());
+        return LocalDateTime.parse(task.path("updatedAt").asText());
+    }
+
+    private JsonNode getTask(long taskId, HttpEntity<Void> query) {
+        ResponseEntity<JsonNode> response = http.exchange(
+                "/api/tasks/{id}", HttpMethod.GET, query, JsonNode.class, taskId
+        );
+        return requireSuccess(response);
+    }
+
+    private void assertBackoff(LocalDateTime previousFailure, LocalDateTime currentFailure, Duration expectedDelay) {
+        Duration elapsed = Duration.between(previousFailure, currentFailure);
+        assertTrue(elapsed.compareTo(expectedDelay) >= 0,
+                () -> "两次失败间隔至少应为 " + expectedDelay + "，实际为 " + elapsed);
     }
 
     private JsonNode requireSuccess(ResponseEntity<JsonNode> response) {
