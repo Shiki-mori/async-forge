@@ -125,7 +125,7 @@ function syncPoll() {
           /* ignore transient poll errors */
         }
       }
-    }, 2000)
+    }, 500)
   }
 }
 
