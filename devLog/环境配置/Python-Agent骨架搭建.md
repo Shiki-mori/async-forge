@@ -1,6 +1,6 @@
 # Python Agent 骨架搭建（P2 步骤 A）
 
-本文记录 **为什么这样搭**、**每个文件做什么**、**请求怎么走**。启动命令以 [README.md](../../README.md) 为准；Docker 启停见 [Python-Agent-Docker.md](Python-Agent-Docker.md)；A2A 字段以 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 为准。
+本文记录 **为什么这样搭**、**每个文件做什么**、**请求怎么走**。启动命令以 [README.md](../../README.md) 为准；Docker 启停见 [Python-Agent-Docker.md](Python-Agent-Docker.md)；A2A 字段以 [a2a-contract.md](../../docs/contracts/a2a-contract.md) 为准。
 
 ## 1. 这一步要解决什么
 
@@ -114,7 +114,7 @@ a2a-sdk **1.1.x / A2A 1.0** 的 JSON-RPC 方法名是 `SendMessage`。`message/s
 
 请求还必须带头 **`A2A-Version: 1.0`**。缺省时 SDK 会按 0.3 线格式处理。
 
-因此先改了契约 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md)，再写代码（项目红线：偏离 method / 端口必须先改 skill）。
+因此先改了契约 [a2a-contract.md](../../docs/contracts/a2a-contract.md)，再写代码（项目红线：偏离 method / 端口必须先改 skill）。
 
 | 项 | 本骨架实际值 |
 |----|----------------|

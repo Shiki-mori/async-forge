@@ -1,6 +1,6 @@
 # 控制台与 README（P2 步骤 D）
 
-本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 AGENT_TASK 在浏览器里怎么走**。启动与三条 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤D.md](../验证/P2-步骤D.md)；交付时的规格见 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) 步骤 D 与 [frontend-console.mdc](../../.cursor/rules/frontend-console.mdc)。
+本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 AGENT_TASK 在浏览器里怎么走**。启动与三条 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤D.md](../验证/P2-步骤D.md)；交付时的规格见 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) 步骤 D 与 [frontend-console.md](../../.claude/rules/frontend-console.md)。
 
 Java 执行器（步骤 B）**没有改**。Python LangGraph / MCP（步骤 C）**没有改**。前端没有新页面、没有聊天窗、没有流式打字，浏览器也 **不** 请求 `AGENT_BASE_URL`。
 
@@ -202,7 +202,7 @@ Error    → selected.errorMessage            // 仅当后端写了才出现
 
 ### 4.4 `README.md`：给人抄的入口，不是第二套契约
 
-步骤 C 之后 README 还留着「固定 stub / 控制台是步骤 D / `AGENT_TIMEOUT_SECONDS` 步骤 B 才会读」这类过时句。步骤 D 按 skill 收成四块，且 A2A 仍是 **`POST /` + `SendMessage` + 头 `A2A-Version: 1.0`**，与 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 一致。
+步骤 C 之后 README 还留着「固定 stub / 控制台是步骤 D / `AGENT_TIMEOUT_SECONDS` 步骤 B 才会读」这类过时句。步骤 D 按 skill 收成四块，且 A2A 仍是 **`POST /` + `SendMessage` + 头 `A2A-Version: 1.0`**，与 [a2a-contract.md](../../docs/contracts/a2a-contract.md) 一致。
 
 | 章节 | 写什么 | 刻意没写什么 |
 |------|--------|----------------|

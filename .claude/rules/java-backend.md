@@ -1,7 +1,7 @@
 ---
 description: Java 后端分层、鉴权隔离、Result 约定、AGENT_TASK 创建校验
-globs: backend/**/*.java
-alwaysApply: false
+paths:
+  - "backend/**/*.java"
 ---
 
 # Java 后端

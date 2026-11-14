@@ -7,8 +7,8 @@
 ## 0. 下一轮 Agent 开场必做
 
 1. 读 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md)（A→D 硬顺序）。
-2. 读 [extend-task-executor](../../.cursor/skills/extend-task-executor/SKILL.md)（步骤 B 的操作清单）。
-3. 读 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 与 [result-schema.md](../../.cursor/skills/python-a2a-mcp/result-schema.md)。
+2. 读 [extend-task-executor](../../.claude/skills/extend-task-executor/SKILL.md)（步骤 B 的操作清单）。
+3. 读 [a2a-contract.md](../../docs/contracts/a2a-contract.md) 与 [result-schema.md](../../docs/contracts/result-schema.md)。
 4. **只做步骤 B。** 不要开始 LangGraph / MCP（C），不要改控制台表单（D），不要重做 Python 骨架（A）。
 
 ## 1. 当前进度（事实）
@@ -52,7 +52,7 @@ P0（JWT、任务 CRUD、手动 ACK、`claimForExecution`、`HTTP_CALL` / `DELAY
 | 头 | **`A2A-Version: 1.0`**、`Content-Type: application/json` |
 | 用户文本 | JSON 字符串：`{"taskId":123,"instruction":"…","forceFail":false}` |
 
-`extend-task-executor` 第 5 步仍写「发 `message/send`」。那是 v0.3 旧名。以 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 为准。若 Java 实现对通后仍想改 skill 用词，**先改 skill 再改代码**；不要把主协议改成 `/api/agent/run`。
+`extend-task-executor` 第 5 步仍写「发 `message/send`」。那是 v0.3 旧名。以 [a2a-contract.md](../../docs/contracts/a2a-contract.md) 为准。若 Java 实现对通后仍想改 skill 用词，**先改 skill 再改代码**；不要把主协议改成 `/api/agent/run`。
 
 Python stub 成功体（步骤 B 联调期望）：
 
@@ -73,7 +73,7 @@ SDK 成功响应里 JSON 在 **artifact `result_json` 的 text** 和 **status.me
 
 ## 3. 步骤 B 要做什么
 
-按 [extend-task-executor](../../.cursor/skills/extend-task-executor/SKILL.md) 逐项。包根 `com.phrolova.asyncforge`，不新起 Maven 模块，`pom.xml` **不加** LLM SDK。
+按 [extend-task-executor](../../.claude/skills/extend-task-executor/SKILL.md) 逐项。包根 `com.phrolova.asyncforge`，不新起 Maven 模块，`pom.xml` **不加** LLM SDK。
 
 ### 3.1 类型与创建校验
 

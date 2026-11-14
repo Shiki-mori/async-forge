@@ -21,7 +21,7 @@
 - 结果里没有 `http_get` / 没有打 httpbin（那是步骤 C）
 - 没有填写 `AI_API_KEY`
 
-契约：[a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md)。skill 旧文里的 `message/send` 不要用来测本骨架。
+契约：[a2a-contract.md](../../docs/contracts/a2a-contract.md)。skill 旧文里的 `message/send` 不要用来测本骨架。
 
 ## 0. 先让进程起来
 

@@ -1,7 +1,8 @@
 ---
 description: Vue 控制台只增量 AGENT_TASK 表单，禁止聊天 UI 与直连 Agent
-globs: frontend/**/*.{ts,vue}
-alwaysApply: false
+paths:
+  - "frontend/**/*.ts"
+  - "frontend/**/*.vue"
 ---
 
 # 前端控制台

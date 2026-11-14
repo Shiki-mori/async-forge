@@ -1,7 +1,16 @@
 ---
 description: 任务执行器注册表、状态机、拆事务、MQ/DLQ 与 AGENT_TASK Worker
-globs: backend/**/worker/**/*.java,backend/**/mq/**/*.java,backend/**/config/RabbitMqConfig.java,backend/**/config/MqProperties.java,backend/**/service/TaskExecutionService.java,backend/**/service/impl/TaskServiceImpl.java,backend/**/mapper/TaskMapper.java,backend/**/entity/TaskType.java,backend/**/entity/TaskStatus.java,backend/**/agent/**/*.java
-alwaysApply: false
+paths:
+  - "backend/**/worker/**/*.java"
+  - "backend/**/mq/**/*.java"
+  - "backend/**/config/RabbitMqConfig.java"
+  - "backend/**/config/MqProperties.java"
+  - "backend/**/service/TaskExecutionService.java"
+  - "backend/**/service/impl/TaskServiceImpl.java"
+  - "backend/**/mapper/TaskMapper.java"
+  - "backend/**/entity/TaskType.java"
+  - "backend/**/entity/TaskStatus.java"
+  - "backend/**/agent/**/*.java"
 ---
 
 # Worker / MQ

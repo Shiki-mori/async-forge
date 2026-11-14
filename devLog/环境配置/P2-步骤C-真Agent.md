@@ -151,7 +151,7 @@ sequenceDiagram
 
 #### `http_get(url) → JSON 字符串`
 
-契约：[langgraph-mcp.md](../../.cursor/skills/python-a2a-mcp/langgraph-mcp.md)。
+契约：[langgraph-mcp.md](../../docs/contracts/langgraph-mcp.md)。
 
 1. `_assert_public_http_url`：只 `http`/`https`；拒无 host、`localhost`、`*.local`、云 metadata 主机名。
 2. `socket.getaddrinfo` 解析 **全部** 地址，再按 Python `ipaddress` 判断 loopback / link-local / private / reserved / multicast。IPv4-mapped IPv6 先还原成 IPv4。这与 Java `HttpCallExecutor` 同级，**不**放宽到 Docker 内网（`172.16/12` 也是 private）。

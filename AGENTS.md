@@ -32,19 +32,19 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 每个任务开始时读取全局红线；分析或修改相关模块前，读取以下对应规则。涉及多个范围时须同时读取。Codex 按此处的条件读取规则，不依赖 Cursor 的 `globs` / `alwaysApply` 自动加载；文档链接本身不代表正文已加载。
 
 - 所有任务：[.cursor/rules/project-guardrails.mdc](.cursor/rules/project-guardrails.mdc)
-- Java 后端分层、鉴权，或修改 `backend/**/*.java`：[.cursor/rules/java-backend.mdc](.cursor/rules/java-backend.mdc)
-- Worker、MQ、执行器、任务状态机、抢占、重试、死信或执行事务边界：[.cursor/rules/task-worker-mq.mdc](.cursor/rules/task-worker-mq.mdc)
-- Python Agent，或修改 `agent/` 下的 Python、依赖、Dockerfile、环境变量示例：[.cursor/rules/python-agent.mdc](.cursor/rules/python-agent.mdc)
-- 前端控制台，或修改 `frontend/` 下的 TypeScript / Vue：[.cursor/rules/frontend-console.mdc](.cursor/rules/frontend-console.mdc)
-- 部署、Compose、数据库、密钥、环境变量、Dockerfile、gitignore，或修改 `README.md`：[.cursor/rules/compose-secrets.mdc](.cursor/rules/compose-secrets.mdc)
+- Java 后端分层、鉴权，或修改 `backend/**/*.java`：[.claude/rules/java-backend.md](.claude/rules/java-backend.md)
+- Worker、MQ、执行器、任务状态机、抢占、重试、死信或执行事务边界：[.claude/rules/task-worker-mq.md](.claude/rules/task-worker-mq.md)
+- Python Agent，或修改 `agent/` 下的 Python、依赖、Dockerfile、环境变量示例：[.claude/rules/python-agent.md](.claude/rules/python-agent.md)
+- 前端控制台，或修改 `frontend/` 下的 TypeScript / Vue：[.claude/rules/frontend-console.md](.claude/rules/frontend-console.md)
+- 部署、Compose、数据库、密钥、环境变量、Dockerfile、gitignore，或修改 `README.md`：[.claude/rules/compose-secrets.md](.claude/rules/compose-secrets.md)
 - 面试、简历深挖、项目介绍、STAR 或追问准备：[.cursor/rules/interview-prep.mdc](.cursor/rules/interview-prep.mdc)
 
 ### Skills
 
-- 执行器与拆事务：[extend-task-executor](.cursor/skills/extend-task-executor/SKILL.md)
+- 执行器与拆事务：[extend-task-executor](.claude/skills/extend-task-executor/SKILL.md)
 - A2A / LangGraph / MCP：[python-a2a-mcp](.cursor/skills/python-a2a-mcp/SKILL.md)
-- 面试深挖准备：[interview-prep](.cursor/skills/interview-prep/SKILL.md)（读 `PRIVATE/简历描述.md`，写 `PRIVATE/面试/`）
-- 代码带读：[drill](.cursor/skills/drill/SKILL.md)（仅用户显式 `/drill`；点名某个方法才只讲该方法，否则按链路讲解；不改代码、不落盘）
+- 面试深挖准备：[interview-prep](.claude/skills/interview-prep/SKILL.md)（读 `PRIVATE/简历描述.md`，写 `PRIVATE/面试/`）
+- 代码带读：[drill](.claude/skills/drill/SKILL.md)（仅用户显式 `/drill`；点名某个方法才只讲该方法，否则按链路讲解；不改代码、不落盘）
 
 ## 当前阶段
 

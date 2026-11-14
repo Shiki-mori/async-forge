@@ -1,7 +1,11 @@
 ---
 description: Python Agent Runtime 约束：FastAPI、A2A、LangGraph、真实 MCP 与 SSRF
-globs: agent/**/*.py,agent/pyproject.toml,agent/requirements.txt,agent/Dockerfile,agent/.env.example
-alwaysApply: false
+paths:
+  - "agent/**/*.py"
+  - "agent/pyproject.toml"
+  - "agent/requirements.txt"
+  - "agent/Dockerfile"
+  - "agent/.env.example"
 ---
 
 # Python Agent

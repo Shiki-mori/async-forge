@@ -57,7 +57,7 @@
 
 - 一个 `@Scheduled` 任务`UPDATE task SET status='PENDING' WHERE status='RUNNING' AND updated_at < NOW() - INTERVAL :lease SECOND`，然后重投；另一条扫长时间 `PENDING` 的行补投。两条 UPDATE 都是原子的，多实例跑也安全，重投后由 `claimForExecution` 保证只执行一次。
 - 关键 trade-off 要能讲：lease 必须大于最大执行时长`AGENT_TIMEOUT_SECONDS` + 余量），否则会把还在跑的任务重复执行。
-- 这一条可以不改表（用 `updated_at` 当 lease 时间戳）。要做干净版加 `lease_until` / `next_retry_at` 列，需要先改 `project-guardrails.mdc` 和 `compose-secrets.mdc` 里"不改 schema"的约束，再动代码。
+- 这一条可以不改表（用 `updated_at` 当 lease 时间戳）。要做干净版加 `lease_until` / `next_retry_at` 列，需要先改 `project-guardrails.mdc` 和 `.claude/rules/compose-secrets.md` 里"不改 schema"的约束，再动代码。
 
 **6. Publisher confirm + return callback**
 

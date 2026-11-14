@@ -80,7 +80,7 @@ PRIVATE/面试/
 - AGENT_TASK：`AgentTaskExecutor`、`AgentA2aClient`、`agent/` LangGraph+MCP、结果 JSON 校验
 - 安全：JWT 用户隔离、`HTTP_CALL` SSRF 拦截
 
-事实冲突时：以代码 + `.cursor/rules` 为准，并在稿里写「简历可收紧的表述」。
+事实冲突时：以代码 + `.claude/rules` 与 `AGENTS.md` 为准，并在稿里写「简历可收紧的表述」。
 
 ## 口述红线
 

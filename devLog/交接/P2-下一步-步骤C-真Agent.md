@@ -6,7 +6,7 @@
 ## 0. 下一轮 Agent 开场必做
 
 1. 读 [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md)（A→D 硬顺序）。
-2. 读 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 以及 [langgraph-mcp.md](../../.cursor/skills/python-a2a-mcp/langgraph-mcp.md)、[result-schema.md](../../.cursor/skills/python-a2a-mcp/result-schema.md)。
+2. 读 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 以及 [langgraph-mcp.md](../../docs/contracts/langgraph-mcp.md)、[result-schema.md](../../docs/contracts/result-schema.md)。
 3. **只做步骤 C。** 不要改 Java 执行器 / 拆事务（B 已完成），不要改控制台表单（D）。
 
 ## 1. 当前进度（事实）
@@ -51,7 +51,7 @@ F20–F29 对照：
 
 ## 3. 步骤 C 要做什么
 
-按 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 与 [langgraph-mcp.md](../../.cursor/skills/python-a2a-mcp/langgraph-mcp.md)。
+按 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 与 [langgraph-mcp.md](../../docs/contracts/langgraph-mcp.md)。
 
 1. MCP 真实协议实现仅两工具：`http_get` + `calculator`（SSRF / 表达式白名单与 rule 一致）。
 2. LangGraph 3～5 节点：`fail_fast` → `reason` ⇄ `tools` → `finalize`；条件边循环，最多 5 轮工具。

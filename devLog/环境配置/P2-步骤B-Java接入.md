@@ -1,6 +1,6 @@
 # Java 接入 AGENT_TASK（P2 步骤 B）
 
-本文记录 **为什么这样改**、**每个改动文件做什么**、**一次任务怎么走**。启动与 curl 以 [README.md](../../README.md) 为准；A2A 字段以 [a2a-contract.md](../../.cursor/skills/python-a2a-mcp/a2a-contract.md) 为准；操作清单以 skill [extend-task-executor](../../.cursor/skills/extend-task-executor/SKILL.md) 为准。
+本文记录 **为什么这样改**、**每个改动文件做什么**、**一次任务怎么走**。启动与 curl 以 [README.md](../../README.md) 为准；A2A 字段以 [a2a-contract.md](../../docs/contracts/a2a-contract.md) 为准；操作清单以 skill [extend-task-executor](../../.claude/skills/extend-task-executor/SKILL.md) 为准。
 
 Python 侧骨架见 [Python-Agent骨架搭建.md](Python-Agent骨架搭建.md)。本步 **没有** 改 `agent/` 里的 LangGraph / MCP（那是步骤 C），也 **没有** 改控制台表单（那是步骤 D）。
 
@@ -357,7 +357,7 @@ curl -s -X POST http://localhost:8090/api/tasks \
 
 | 文件 | 改动 |
 |------|------|
-| `.cursor/skills/extend-task-executor/SKILL.md` | Client 发 `SendMessage`，不再写过时的 `message/send` |
+| `.claude/skills/extend-task-executor/SKILL.md` | Client 发 `SendMessage`，不再写过时的 `message/send` |
 | [P2 交付记录](../归档/P2-AGENT_TASK/交付记录.md) | F20/F21/F22/F25/F26/F27 勾成完成 |
 | `AGENTS.md` | 当前阶段改为 B 已完成，下一轮做 C |
 | `README.md` | 补充 `AGENT_TASK` curl；去掉「尚未接入 Java」 |

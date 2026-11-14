@@ -5,7 +5,7 @@ description: Implements the Python Agent Runtime: official a2a-sdk server, LangG
 
 # Python A2A + LangGraph + MCP
 
-契约：[a2a-contract.md](a2a-contract.md)。结果：[result-schema.md](result-schema.md)。图与工具：[langgraph-mcp.md](langgraph-mcp.md)。
+契约：[a2a-contract.md](../../../docs/contracts/a2a-contract.md)。结果：[result-schema.md](../../../docs/contracts/result-schema.md)。图与工具：[langgraph-mcp.md](../../../docs/contracts/langgraph-mcp.md)。
 
 ## 实现顺序
 

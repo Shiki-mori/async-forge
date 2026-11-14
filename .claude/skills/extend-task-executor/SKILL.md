@@ -5,7 +5,7 @@ description: Extends async-forge with a new TaskType via TaskExecutor registry, 
 
 # 扩展 TaskExecutor（含 AGENT_TASK）
 
-新任务类型只通过注册表扩展。A2A 字段见 [a2a-contract.md](../python-a2a-mcp/a2a-contract.md) 与 [result-schema.md](../python-a2a-mcp/result-schema.md)。
+新任务类型只通过注册表扩展。A2A 字段见 [a2a-contract.md](../../../docs/contracts/a2a-contract.md) 与 [result-schema.md](../../../docs/contracts/result-schema.md)。
 
 ## 目标文件
 
@@ -25,7 +25,7 @@ description: Extends async-forge with a new TaskType via TaskExecutor registry, 
    - 短事务：`claimForExecution` 条件更新为 `RUNNING`，成功后读取任务，未抢占则跳过
    - **无事务**：`taskExecutorRegistry.get(...).execute(task)`（含 A2A / HTTP）
    - 短事务：写 `SUCCESS` + `result_json`，或走现有 `handleFailure`
-   - `handleFailure` 遵循 [Worker / MQ 规则](../../rules/task-worker-mq.mdc) 中的状态机与延迟重试拓扑，重试消息在状态事务提交后投递
+   - `handleFailure` 遵循 [Worker / MQ 规则](../../rules/task-worker-mq.md) 中的状态机与延迟重试拓扑，重试消息在状态事务提交后投递
    - 保留 Worker / MQ 规则中的消息头与状态匹配条件，防止旧消息提前抢占等待重试的任务
 4. `AgentTaskExecutor`：
    - `taskType()` 返回 `"AGENT_TASK"`
