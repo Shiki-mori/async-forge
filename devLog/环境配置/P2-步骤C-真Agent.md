@@ -1,6 +1,6 @@
 # 真 LangGraph / MCP（P2 步骤 C）
 
-本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 A2A 请求在 Python 里怎么走**。启动与 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤C.md](../验证/P2-步骤C.md)；契约以 skill [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 为准。
+本文记录 **为什么这样改**、**每个改动文件做什么**、**一次 A2A 请求在 Python 里怎么走**。启动与 curl 以 [README.md](../../README.md) 为准；验收清单见 [P2-步骤C.md](../验证/P2-步骤C.md)；契约以 skill `python-a2a-mcp`（已删除，见 git 历史 `53df1db`；契约现于 `docs/contracts/`） 为准。
 
 Java 执行器（步骤 B）**没有改**。控制台表单（步骤 D）**没有改**。
 

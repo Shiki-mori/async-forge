@@ -1,48 +1,29 @@
 ---
 name: extend-task-executor
-description: Extends async-forge with a new TaskType via TaskExecutor registry, including AGENT_TASK Java wiring and splitting TaskExecutionService so A2A/HTTP is outside DB transactions. Use when adding a task executor, TaskType, AgentTaskExecutor, AgentA2aClient, or refactoring claim/execute/handleFailure.
+description: Checklist for adding a new TaskType to async-forge via the TaskExecutor registry, keeping remote calls outside DB transactions and reusing handleFailure. Use when adding a task executor or TaskType, or changing claim/execute/handleFailure in TaskExecutionService.
 ---
 
-# 扩展 TaskExecutor（含 AGENT_TASK）
+# 新增 TaskType 清单
 
-新任务类型只通过注册表扩展。A2A 字段见 [a2a-contract.md](../../../docs/contracts/a2a-contract.md) 与 [result-schema.md](../../../docs/contracts/result-schema.md)。
+新类型只通过注册表扩展，禁止在 Worker 里写 `switch`。状态机、拆事务、延迟重试与抢占条件以 [Worker / MQ 规则](../../rules/task-worker-mq.md) 为准；现有 `AgentTaskExecutor` 是参考实现。
 
-## 目标文件
+## 要改的地方
 
-- `entity/TaskType.java` — 增加 `AGENT_TASK`
-- `service/impl/TaskServiceImpl.java` — 创建时校验 `instruction`；`validateTaskType` 随枚举自动放开
-- `service/TaskExecutionService.java` — **拆事务**（必做）
-- `worker/AgentTaskExecutor.java` — 新 `@Component`
-- `agent/AgentProperties.java`、`agent/AgentA2aClient.java`
-- `resources/application.yml` — `async-forge.agent.*`
-- 勿改 `worker/TaskExecutor.java` 接口语义；勿改 `HttpCallExecutor` / `DelayDemoExecutor` 演示语义
+1. `entity/TaskType.java` 加枚举值。`validateTaskType` 随枚举自动放开，未知类型仍返回 `TASK_TYPE_UNSUPPORTED`。
+2. `service/impl/TaskServiceImpl.java`：payload 有必填字段时，仿照 `validateAgentPayload` 在创建时校验，失败抛 `BusinessException`。
+3. `worker/<Xxx>Executor.java`：新 `@Component` 实现 `TaskExecutor`，`taskType()` 返回枚举名。
+   - `execute(Task)` 只返回 `result_json` 或抛异常；**不更新任务状态**。
+   - 执行器内再校验一次 payload（第二道闸，抛错会进重试）。
+   - 远程调用自带超时；结果要先校验结构再返回，未校验的原文不当 SUCCESS。
+4. 需要配置时加到 `resources/application.yml` 的 `async-forge.<类型>.*`，环境变量占位同步到 `deploy/.env.example`。
+5. `frontend/src/types.ts` 的 `TaskType` 与 `ConsoleView.vue` 的表单分支同步；README 补一条演示。
 
-## 步骤
+## 不要碰
 
-1. `TaskType` 增加 `AGENT_TASK`。未知类型仍返回 `TASK_TYPE_UNSUPPORTED`。
-2. 创建路径：`instruction` trim 后非空（建议 ≤2000）否则 400。不要在 Java 里解析用户 URL。执行器作为第二道闸（空 instruction 抛错，会进重试）。
-3. 拆 `TaskExecutionService.execute`：
-   - 短事务：`claimForExecution` 条件更新为 `RUNNING`，成功后读取任务，未抢占则跳过
-   - **无事务**：`taskExecutorRegistry.get(...).execute(task)`（含 A2A / HTTP）
-   - 短事务：写 `SUCCESS` + `result_json`，或走现有 `handleFailure`
-   - `handleFailure` 遵循 [Worker / MQ 规则](../../rules/task-worker-mq.md) 中的状态机与延迟重试拓扑，重试消息在状态事务提交后投递
-   - 保留 Worker / MQ 规则中的消息头与状态匹配条件，防止旧消息提前抢占等待重试的任务
-4. `AgentTaskExecutor`：
-   - `taskType()` 返回 `"AGENT_TASK"`
-   - 解析 payload；`forceFail` **仍走 A2A**，禁止 Java 直接 throw 绕过 Python
-   - 调 `AgentA2aClient`；超时抛错
-   - 校验返回 JSON：非空 `summary` 且 `toolCalls` 为数组；通过则 `toString` 作为 `result_json`
-   - **不**在此方法更新任务状态
-5. `AgentA2aClient`：拉 Card → 发 `SendMessage`（A2A 1.0；不是 v0.3 的 `message/send`）→ 超时默认 60s → 抽出 JSON。失败（含 A2A Task failed）视为 `execute()` 抛错。不要写业务摘要逻辑。
-6. 配置：
+- `TaskExecutor` 接口语义、`TaskExecutionService` 的三段式（短事务抢占 → 事务外 `execute` → 短事务回写 / `handleFailure`）。
+- `HttpCallExecutor` / `DelayDemoExecutor` 的演示语义；不要借 `HttpCallExecutor` 调内部服务。
 
-```yaml
-async-forge:
-  agent:
-    base-url: ${AGENT_BASE_URL:http://localhost:8081}
-    timeout-seconds: ${AGENT_TIMEOUT_SECONDS:60}
-```
+## 回归
 
-Compose 中 backend 必须 `AGENT_BASE_URL=http://agent:8081`。禁止把该 URL 交给 `HttpCallExecutor`。
-
-7. 回归：`DELAY_DEMO` + `fail=true` 仍能重试至 `DEAD`；`HTTP_CALL` 成功语义不变。
+- `backend/` 下 `mvn verify`（需要 Docker）：`DelayDemoRetryIT` 仍是 `FAILED/1 → FAILED/2 → DEAD/3`。
+- 新类型至少覆盖一条成功、一条失败到 `DEAD` 的路径。

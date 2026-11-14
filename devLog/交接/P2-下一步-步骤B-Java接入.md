@@ -147,7 +147,7 @@ Agent 与 Java 都要能连上（本机 Agent：`cd agent && .venv/bin/uvicorn a
 
 ## 6. 给人类：B 之后还有什么
 
-- **C**：按 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 接真 MCP（`http_get` + `calculator`）和 LangGraph 3～5 节点；去掉固定 JSON；httpbin 指令做成功演示。需要 `AI_*` 环境变量。
+- **C**：按 `python-a2a-mcp`（已删除，见 git 历史 `53df1db`；契约现于 `docs/contracts/`） 接真 MCP（`http_get` + `calculator`）和 LangGraph 3～5 节点；去掉固定 JSON；httpbin 指令做成功演示。需要 `AI_*` 环境变量。
 - **D**：控制台表单 + README 抄 [demos.md](../归档/P2-AGENT_TASK/demos.md) 三条演示。
 
 ## 7. 人类上下文（下一轮不必再教 Python 入门）

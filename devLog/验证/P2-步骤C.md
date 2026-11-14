@@ -1,6 +1,6 @@
 # P2 步骤 C 验证（真 LangGraph / MCP）
 
-步骤 C 已把固定成功 stub 换成：MCP 两工具 + LangGraph Function Calling。规格以 [python-a2a-mcp](../../.cursor/skills/python-a2a-mcp/SKILL.md) 为准。
+步骤 C 已把固定成功 stub 换成：MCP 两工具 + LangGraph Function Calling。规格以 `python-a2a-mcp`（已删除，见 git 历史 `53df1db`；契约现于 `docs/contracts/`） 为准。
 
 本机 Agent 映射端口看 `deploy/.env` 的 `AGENT_PORT`（占用 8081 时常用 **8082**）。Compose 内 Java 仍是 `http://agent:8081`。
 
