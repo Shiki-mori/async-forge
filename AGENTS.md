@@ -65,4 +65,4 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 - P0 已完成：JWT、任务 CRUD、手动 ACK、`claimForExecution`、`HTTP_CALL` / `DELAY_DEMO`、DLQ。
 - P2 已完成：Python LangGraph + MCP；Java `AGENT_TASK` / 拆事务 / A2A `SendMessage`；控制台 + README 三条演示。
-- P3 进行中，按 [P3 路线](devLog/优化/P3-路线.md) 推进。已完成：Testcontainers 集成测试、Python 工具测试、2s / 8s 延迟重试与 `FAILED` 状态、Worker 并发可配置。完成一项后在路线文档里标注「已完成」及提交号。
+- P3 进行中，按 [P3 路线](devLog/优化/P3-路线.md) 推进。已完成：Testcontainers 集成测试、Python 工具测试、2s / 8s 延迟重试与 `FAILED` 状态、Worker 并发可配置、重试耗尽时消息 NACK 进入 DLQ。完成一项后在路线文档里标注「已完成」及提交号。
