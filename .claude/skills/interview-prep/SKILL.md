@@ -5,7 +5,7 @@ description: Prepares deep-dive interview answers for the async-forge portfolio 
 
 # 面试深挖准备
 
-面向校招口述，不是产品功能。禁止在仓库里加聊天窗 / 模拟面试 / 简历解析。
+面向校招口述，不是产品功能：面试准备不在仓库里做成功能。
 
 ## 路径
 
@@ -24,7 +24,7 @@ description: Prepares deep-dive interview answers for the async-forge portfolio 
 
 ## 工序
 
-1. **对齐简历**：只深挖 `简历描述.md` 里出现的能力。不要把 VitaeLens、未做的 Kafka/K8s/工作流引擎写进去。
+1. **对齐简历**：只深挖 `简历描述.md` 里出现的能力。
 2. **代码证伪**：每个结论打开对应实现再写。口述稿必须带类名 / 方法名 / 配置项，禁止「大概用了 RabbitMQ」。
 3. **写到 PRIVATE/面试**：用户问单点 → 只写该主题文件；要系统准备 → 按下面清单补齐。聊天里给提纲，完整方案落盘。
 4. **不进 Git**：不要 `git add PRIVATE/`。不要把 JWT、`.env`、API Key 写进面试稿。
@@ -68,7 +68,7 @@ PRIVATE/面试/
   - A：…（含失败路径：重试 / DEAD / 校验失败）
 
 ## 边界（主动说「没做」）
-- 简历没写、规则禁止扩的能力，用一句话说清范围
+- 简历没写、项目未实现的能力，用一句话说清范围
 ```
 
 ## 先搜这些（再按需扩）

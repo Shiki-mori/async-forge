@@ -1,5 +1,5 @@
 ---
-description: Compose 拓扑、环境变量占位、密钥不进 Git、不改表结构
+description: Compose 拓扑、环境变量占位、密钥不进 Git、改表同步
 paths:
   - "deploy/**"
   - "database/**"
@@ -11,7 +11,7 @@ paths:
 
 # Compose / 密钥 / 表结构
 
-- **不改** `database/sql/schema.sql`（`task_type` 已是 `VARCHAR(32)`）。不加 `task_step` / `ai_call_log`。
+- 改表须同步 `database/sql/schema.sql` 与 `database/数据库设计.md`，并说明已有数据如何迁移（`task_type` 是 `VARCHAR(32)`，新增任务类型无需改表）。
 - Compose 中 `agent` 服务：build context `../agent`，`container_name: async-forge-agent`，端口 `${AGENT_PORT:-8081}:8081`，网络 `async-forge`，healthcheck `GET /health`。
 - backend 注入 `AGENT_BASE_URL=http://agent:8081`，`depends_on` agent healthy。仅本地只起 Java、Agent 在宿主机时才用 `localhost:8081`。
 - `.env.example` 只放占位，不要把 `deploy/.env` 的真实 Key 写进示例。新增环境变量须同步 `.env.example`、`docker-compose.yml.example` 与 README。

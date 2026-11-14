@@ -4,7 +4,7 @@
 
 状态至少包含：`instruction`、`force_fail`、`messages`、`tool_calls`、`summary`、`error`。
 
-节点（3～5 个，不要更多）：
+节点：
 
 ```text
 start

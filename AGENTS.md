@@ -5,35 +5,33 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 ## 给人类
 
 - 启动、演示、环境变量：[README.md](README.md)
-- Python Agent 骨架搭建：[devLog/环境配置/Python-Agent骨架搭建.md](devLog/环境配置/Python-Agent骨架搭建.md)
-- 验证步骤 A：[devLog/验证/P2-步骤A.md](devLog/验证/P2-步骤A.md)
-- Java 接入 AGENT_TASK：[devLog/环境配置/P2-步骤B-Java接入.md](devLog/环境配置/P2-步骤B-Java接入.md)
-- 真 LangGraph / MCP：[devLog/环境配置/P2-步骤C-真Agent.md](devLog/环境配置/P2-步骤C-真Agent.md)
-- 步骤 C 验证：[devLog/验证/P2-步骤C.md](devLog/验证/P2-步骤C.md)
-- 控制台 / README 代码说明：[devLog/环境配置/P2-步骤D-控制台.md](devLog/环境配置/P2-步骤D-控制台.md)
-- 步骤 D 验证：[devLog/验证/P2-步骤D.md](devLog/验证/P2-步骤D.md)
-- P2 交付归档：[A–D 工序与 F20–F29 验收清单](devLog/归档/P2-AGENT_TASK/交付记录.md)
-- 表结构：[database/sql/schema.sql](database/sql/schema.sql)（不改表）
+- 优化路线（P3）：[devLog/优化/P3-路线.md](devLog/优化/P3-路线.md)
 - 接口契约：[A2A](docs/contracts/a2a-contract.md)、[result_json](docs/contracts/result-schema.md)、[LangGraph 与 MCP 工具](docs/contracts/langgraph-mcp.md)
+- 表结构：[database/sql/schema.sql](database/sql/schema.sql)，说明见 [数据库设计](database/数据库设计.md)
+- 历史记录：P2 各步骤的搭建说明在 `devLog/环境配置/`，验证清单在 `devLog/验证/`，交付汇总见 [P2 交付记录](devLog/归档/P2-AGENT_TASK/交付记录.md)
 
-## 项目红线（所有任务）
+## 功能取舍（所有任务）
 
-- 校招**异步任务平台**。与 VitaeLens **互补**：禁止简历解析、JD 匹配、模拟面试、聊天机器人。
-- Agent 只是任务类型 `AGENT_TASK`（旧名 `AGENT_TOOL` 废弃），复用同一套状态机与 DLQ，不是新平台。
-- Java 管可靠性（鉴权、入库、MQ、抢占、重试、死信）；Python 管智能。禁止：Java 加 LLM SDK；Python 连 MySQL / RabbitMQ；前端直连 Agent。
+本项目用于本科生校招（Java 后端 / 全栈岗位）的简历。功能扩展按这个水平取舍：
+
+- 优先加深现有链路（提交 → MQ → Worker → 重试 / 死信）的可靠性、测试和可观测性，而不是横向堆砌新组件。
+- 每项新能力都要能讲清原理和 trade-off，并有测试或可复现的演示支撑；讲不深的技术名词不要引入。
+- 改动规模与收益要相称：能用现有组件解决的，不新增中间件或服务。
+
+## 架构约束（所有任务）
+
+- 定位是**异步任务平台**。Agent 是任务类型 `AGENT_TASK`，复用同一套状态机与 DLQ。
+- Java 管可靠性（鉴权、入库、MQ、抢占、重试、死信）；Python 管智能。Java 不引入 LLM SDK；Python 不连 MySQL / RabbitMQ；前端不直连 Agent。
+- 异步执行靠 MQ Worker，不用 `@Async` / 线程池替代。
 - 远程调用（A2A / HTTP）不得长时间占 DB 事务。未校验的模型原文不得当 SUCCESS。
 - 密钥不入库、不进 Git。日志不打 JWT 全文、密码、API Key。
-- 窄而硬：MCP 工具仅 2 个、LangGraph 3～5 节点、一种阻塞 A2A。禁止 Multi-Agent、向量库、长期记忆。
-- P0 已完成：JWT、任务 CRUD、手动 ACK、`claimForExecution`、`HTTP_CALL` / `DELAY_DEMO`、DLQ。禁止用 `@Async` / 线程池替换 MQ；禁止改写这两类任务的成功演示语义来接 Agent。
-- 明确不做：手动重试 HTTP、工作流引擎、Redis 限流、Kafka、K8s、改 `database/sql/schema.sql`、用 `HTTP_CALL` 打 Agent。
-- 偏离契约（A2A method / 端口 / `result_json` 字段）须先改 `docs/contracts/` 或对应规则，再改代码。
-- 个人面试准备走 skill `interview-prep`，不是产品功能。
+- 改契约（A2A method / 端口 / `result_json` 字段）须先改 `docs/contracts/` 或对应规则，再改代码。改表须同步 `schema.sql` 与 `数据库设计.md`。
 
 ## 给 Agent（事实来源）
 
 ### 维护约定
 
-- 本文件维护项目边界、红线、读取条件和文档索引，不复制模块规则或技能流程。
+- 本文件维护功能取舍、架构约束、读取条件和文档索引，不复制模块规则或技能流程。
 - 模块规则在 `.claude/rules/*.md`，frontmatter 的 `paths` 供 Claude Code 按文件自动加载；Codex 按下方条件读取。
 - 技能正文唯一位置是 `.claude/skills/<技能名>/`；`.agents/skills/<技能名>` 是指向 `../../.claude/skills/<技能名>` 的相对符号链接，供 Codex 发现。新增技能时先建完整目录，再加链接，二者一同纳入版本控制。
 - 接口契约在 `docs/contracts/`，人与 Agent 共用。
@@ -65,6 +63,6 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 ## 当前阶段
 
-P0 已完成。P2 **步骤 A、B、C、D 已完成**（Python LangGraph + MCP；Java `AGENT_TASK` / 拆事务 / A2A `SendMessage`；控制台 + README 三条演示）。
-
-F20–F29 已勾完。不要重做 A–C；不要用 `HTTP_CALL` 打 Agent；不要加聊天窗 / 第三个 MCP 工具 / 改 `schema.sql`。
+- P0 已完成：JWT、任务 CRUD、手动 ACK、`claimForExecution`、`HTTP_CALL` / `DELAY_DEMO`、DLQ。
+- P2 已完成：Python LangGraph + MCP；Java `AGENT_TASK` / 拆事务 / A2A `SendMessage`；控制台 + README 三条演示。
+- P3 进行中，按 [P3 路线](devLog/优化/P3-路线.md) 推进。已完成：Testcontainers 集成测试、Python 工具测试、2s / 8s 延迟重试与 `FAILED` 状态、Worker 并发可配置。完成一项后在路线文档里标注「已完成」及提交号。
