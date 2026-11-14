@@ -14,7 +14,7 @@ Python **必须**用官方 `a2a-sdk` 作为 A2A Server（JSON-RPC over HTTP）�
    - 请求头：必须带 `A2A-Version: 1.0`
    - `Content-Type: application/json`
    - Java 客户端必须与上述 SDK 信封一致；README 写明 method / 路径 / 头
-3. **阻塞一次调用**：Java Worker 同步等待最终 Task（不要在 P2 做 Java 侧轮询 + 流式）。超时默认 60 秒。
+3. **阻塞一次调用**：Java Worker 同步等待最终 Task（不做 Java 侧轮询 + 流式）。超时默认 60 秒。
 4. 用户 Message 的文本 part 必须是 JSON 字符串（便于 Java/Python 对齐）：
 
 ```json

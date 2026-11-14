@@ -49,6 +49,14 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - 前端控制台，或修改 `frontend/` 下的 TypeScript / Vue：[.claude/rules/frontend-console.md](.claude/rules/frontend-console.md)
 - 部署、Compose、数据库、密钥、环境变量、Dockerfile、gitignore，或修改 `README.md`：[.claude/rules/compose-secrets.md](.claude/rules/compose-secrets.md)
 
+### 改完验证
+
+按改动范围运行，失败时报告输出，不要跳过：
+
+- `backend/`：`mvn verify`。需要本机 Docker（Testcontainers 起 MySQL + RabbitMQ），会跑单元测试和 `*IT` 集成测试；只跑单元测试用 `mvn test`。
+- `agent/`：在虚拟环境中 `pip install -e ".[tests]"` 后运行 `pytest`。
+- `frontend/`：`npm run build`（含 `vue-tsc` 类型检查）。
+
 ### Skills
 
 - 新增任务类型：[extend-task-executor](.claude/skills/extend-task-executor/SKILL.md)

@@ -1,6 +1,6 @@
 # RabbitMQ
 
-RabbitMQ相关配置:[application.yml](backend/src/main/resources/application.yml)
+RabbitMQ相关配置:[application.yml](../../backend/src/main/resources/application.yml)
 
 ## 连接配置
 
@@ -53,7 +53,7 @@ mq:
   dlq-routing-key: task.execute.dlq
 ```
 
-项目自定义配置，通过 `MqProperties` 读取。[MqProperties](backend/src/main/java/com/phrolova/asyncforge/config/MqProperties.java)
+项目自定义配置，通过 `MqProperties` 读取。[MqProperties](../../backend/src/main/java/com/phrolova/asyncforge/config/MqProperties.java)
 
 ### 参数解释
 

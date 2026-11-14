@@ -39,7 +39,7 @@ SSRF（必须，与 Java `HttpCallExecutor` 同级）：
 - 拒绝 `localhost`、`*.local`、loopback、link-local、site-local、any-local
 - 拒绝云 metadata：`169.254.169.254`、`metadata.google.internal`
 
-P2 **不要**把 `http_get` 的白名单放宽到 Docker 内网；Agent 自身由 Java 经 Compose 网络调用，与工具出站不是同一通道。
+**不要**把 `http_get` 的白名单放宽到 Docker 内网；Agent 自身由 Java 经 Compose 网络调用，与工具出站不是同一通道。
 
 ### `calculator`
 
