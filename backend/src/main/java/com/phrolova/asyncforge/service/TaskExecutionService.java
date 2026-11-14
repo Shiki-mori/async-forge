@@ -33,10 +33,10 @@ public class TaskExecutionService {
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
-    public void execute(Long taskId, Integer retryCount) {
+    public ExecutionOutcome execute(Long taskId, Integer retryCount) {
         Task claimed = claimInShortTransaction(taskId, retryCount);
         if (claimed == null) {
-            return;
+            return ExecutionOutcome.SKIPPED;
         }
 
         try {
@@ -44,10 +44,12 @@ public class TaskExecutionService {
             String resultJson = executor.execute(claimed);
             markSuccessInShortTransaction(taskId, resultJson);
             log.info("Task succeeded, taskId={}", taskId);
+            return ExecutionOutcome.SUCCESS;
         } catch (Exception ex) {
             log.warn("Task execution failed, taskId={}", taskId, ex);
             String errorMessage = Objects.toString(ex.getMessage(), ex.getClass().getSimpleName());
-            transactionTemplate.executeWithoutResult(status -> handleFailure(claimed, errorMessage));
+            // DEAD 先在事务内提交，消费者再 NACK，DLQ 监听器看到的任务一定已是终态
+            return transactionTemplate.execute(status -> handleFailure(claimed, errorMessage));
         }
     }
 
@@ -69,7 +71,7 @@ public class TaskExecutionService {
                 .set(Task::getErrorMessage, null)));
     }
 
-    private void handleFailure(Task task, String errorMessage) {
+    private ExecutionOutcome handleFailure(Task task, String errorMessage) {
         int nextRetryCount = task.getRetryCount() + 1;
         boolean exhausted = nextRetryCount >= task.getMaxRetry();
 
@@ -82,8 +84,9 @@ public class TaskExecutionService {
 
         if (exhausted) {
             log.warn("Task retries exhausted, taskId={}, retryCount={}", task.getId(), nextRetryCount);
-        } else {
-            taskProducer.publishRetryAfterCommit(task.getId(), nextRetryCount);
+            return ExecutionOutcome.EXHAUSTED;
         }
+        taskProducer.publishRetryAfterCommit(task.getId(), nextRetryCount);
+        return ExecutionOutcome.RETRY;
     }
 }

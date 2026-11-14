@@ -1,5 +1,6 @@
 package com.phrolova.asyncforge.mq;
 
+import com.phrolova.asyncforge.service.ExecutionOutcome;
 import com.phrolova.asyncforge.service.TaskExecutionService;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,14 @@ public class TaskConsumer {
         Long taskId = message.getTaskId();
         log.info("Consuming task message, taskId={}, retryCount={}", taskId, retryCount);
         try {
-            taskExecutionService.execute(taskId, retryCount);
-            // 发送ACK消息，确认消息已成功处理
+            ExecutionOutcome outcome = taskExecutionService.execute(taskId, retryCount);
+            if (outcome == ExecutionOutcome.EXHAUSTED) {
+                // 任务已提交为 DEAD，拒绝且不重回队列，消息经 DLX 路由到死信队列留痕
+                log.warn("Task exhausted, rejecting message to DLQ, taskId={}", taskId);
+                channel.basicNack(deliveryTag, false, false);
+                return;
+            }
+            // 成功、已安排重试或无需执行：确认消息已处理
             channel.basicAck(deliveryTag, false);
         } catch (Exception ex) {
             log.error("Task execution failed in consumer, taskId={}", taskId, ex);

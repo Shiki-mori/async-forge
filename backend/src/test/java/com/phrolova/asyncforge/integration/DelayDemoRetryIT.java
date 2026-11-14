@@ -2,8 +2,12 @@ package com.phrolova.asyncforge.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.phrolova.asyncforge.config.MqProperties;
+import com.phrolova.asyncforge.mq.DlqListener;
 import com.phrolova.asyncforge.mq.TaskMessage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistry;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +28,7 @@ import org.testcontainers.utility.MountableFile;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,6 +36,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
@@ -77,8 +83,19 @@ class DelayDemoRetryIT {
     @Autowired
     private MqProperties mqProperties;
 
+    @Autowired
+    private RabbitListenerEndpointRegistry listenerRegistry;
+
+    @AfterEach
+    void restartDlqListener() {
+        listenerRegistry.getListenerContainer(DlqListener.LISTENER_ID).start();
+    }
+
     @Test
     void failingDelayTaskWaitsBetweenRetriesAndSkipsStaleMessages() {
+        // 暂停死信监听器，让耗尽的消息留在 DLQ 中供断言
+        listenerRegistry.getListenerContainer(DlqListener.LISTENER_ID).stop();
+
         HttpHeaders headers = registerUser();
         long taskId = submitDelayTask(headers, 0, true);
         HttpEntity<Void> query = new HttpEntity<>(headers);
@@ -96,6 +113,18 @@ class DelayDemoRetryIT {
 
         LocalDateTime exhausted = awaitTaskState(taskId, query, "DEAD", 3);
         assertBackoff(secondFailure, exhausted, Duration.ofSeconds(8));
+
+        // 耗尽的那条消息被 NACK 并经 DLX 进入 DLQ；被跳过的旧消息已 ACK，不进 DLQ
+        Message deadLetter = rabbitTemplate.receive(mqProperties.getDlq(), 5_000);
+        assertNotNull(deadLetter, "耗尽的任务消息应进入死信队列");
+        assertTrue(new String(deadLetter.getBody()).contains("\"taskId\":" + taskId));
+        // 第三次执行由 retry-count=2 的延迟消息触发，进入 DLQ 的正是这条消息
+        assertEquals(Integer.valueOf(2), deadLetter.getMessageProperties().getHeader(TaskMessage.RETRY_COUNT_HEADER));
+        List<Map<String, ?>> xDeath = deadLetter.getMessageProperties().getXDeathHeader();
+        assertNotNull(xDeath, "死信应带 x-death 头");
+        assertEquals("rejected", xDeath.get(0).get("reason"));
+        assertEquals(mqProperties.getQueue(), xDeath.get(0).get("queue"));
+        assertNull(rabbitTemplate.receive(mqProperties.getDlq(), 1_000), "跳过的旧消息不应进入死信队列");
     }
 
     @Test

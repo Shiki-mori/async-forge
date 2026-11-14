@@ -124,9 +124,9 @@ PENDING ──抢占──► RUNNING ──成功──────────
 ```
 
 - **抢占。** 无 `task-retry-count` 消息头的消息只能抢占 `PENDING`。带该消息头的消息只能抢占 `FAILED` 且 `retry_count` 与消息头一致的任务。状态和次数由同一条条件更新校验，抢占失败时跳过执行。
-- **有限重试。** `retryCount` 记录累计执行失败次数。默认 `max_retry=3`，第一次失败后等待 2 秒，第二次失败后等待 8 秒，第三次失败写 `DEAD`。未耗尽时先提交 `FAILED` 和失败原因，再投递延迟消息。业务失败处理完成后，消费者 ACK 当前消息。重试成功时清空上次的失败原因。
+- **有限重试。** `retryCount` 记录累计执行失败次数。默认 `max_retry=3`，第一次失败后等待 2 秒，第二次失败后等待 8 秒，第三次失败写 `DEAD`。未耗尽时先提交 `FAILED` 和失败原因，再投递延迟消息。未耗尽时消费者 ACK 当前消息；耗尽时先提交 `DEAD`，再 `NACK(requeue=false)`，让这条消息进入死信队列。重试成功时清空上次的失败原因。
 - **延迟重试队列。** 后端声明两条没有消费者的持久化队列。`task.exchange` 使用 `task.retry.2s` 将消息路由到 `task.retry.2s.q`（TTL 2 秒），使用 `task.retry.8s` 路由到 `task.retry.8s.q`（TTL 8 秒）。消息到期后经 `task.exchange` 和 `task.execute` 回到 `task.execute.q`。
-- **RabbitMQ 死信。** 异常传播到消费者时，消费者发出 `NACK(requeue=false)`，RabbitMQ 按死信配置将消息路由到 `task.execute.dlq`。死信监听器会将尚未标记为 `DEAD` 的对应任务收口并确认消息。管理台中可以查看死信队列和路由配置，强制失败演示则通过任务状态与错误信息验证。可查看 [TaskConsumer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskConsumer.java)、[RabbitMqConfig](backend/src/main/java/com/phrolova/asyncforge/config/RabbitMqConfig.java) 和 [DlqListener](backend/src/main/java/com/phrolova/asyncforge/mq/DlqListener.java)。
+- **RabbitMQ 死信。** 两种情况下消费者会发出 `NACK(requeue=false)`：重试耗尽，或异常传播到消费者。RabbitMQ 按死信配置将消息路由到 `task.execute.dlq`，并附上 `x-death` 头（原队列、`reason=rejected`）。死信监听器是幂等的：任务已是 `DEAD` 时只记录日志并 ACK；任务尚未终态时（例如回写失败）收成 `DEAD`。被跳过的过期或重复消息会被 ACK，不进入死信队列。强制失败演示结束后，可在管理台 `task.execute.dlq` 的消息速率中看到这条死信。监听器会立即确认死信，所以队列不保留消息，也没有回放入口。可查看 [TaskConsumer](backend/src/main/java/com/phrolova/asyncforge/mq/TaskConsumer.java)、[RabbitMqConfig](backend/src/main/java/com/phrolova/asyncforge/config/RabbitMqConfig.java) 和 [DlqListener](backend/src/main/java/com/phrolova/asyncforge/mq/DlqListener.java)。
 
 ## 本地调试
 
