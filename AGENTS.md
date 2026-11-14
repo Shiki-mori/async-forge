@@ -23,6 +23,7 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 
 - `.cursor/rules/` 与 `.cursor/skills/` 是规则和技能正文的唯一维护位置，Cursor 与 Codex 共用。
 - `.agents/skills/<技能名>` 与 `.claude/skills/<技能名>` 都是指向 `../../.cursor/skills/<技能名>` 的相对符号链接，分别供 Codex 与 Claude Code 发现技能；不要在此创建独立副本。新增技能时，在 `.cursor/skills/` 创建完整目录，再在 `.agents/skills/` 和 `.claude/skills/` 各添加对应链接。
+- 根目录 `CLAUDE.md` 只用 `@` 导入本文件与全局红线，供 Claude Code 自动加载；不要在其中写正文。
 - 链接整个技能目录，保留 `SKILL.md` 及其附属文档、脚本的相对引用；链接与源目录一同纳入版本控制。
 - 本文件只维护项目边界、读取条件和文档索引，不复制详细规则或技能流程。
 

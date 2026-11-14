@@ -9,17 +9,16 @@ description: Prepares deep-dive interview answers for the async-forge portfolio 
 
 ## 路径
 
-| 用途 | 绝对路径 |
+| 用途 | 路径（相对仓库根） |
 |------|----------|
-| 简历原文（必读） | `/home/phrolova/CodeProject/async-forge/PRIVATE/简历描述.md` |
-| 方案输出 | `/home/phrolova/CodeProject/async-forge/PRIVATE/面试/` |
+| 简历原文（必读） | `PRIVATE/简历描述.md` |
+| 方案输出 | `PRIVATE/面试/` |
 
-`PRIVATE/` 在 `.gitignore` 中。Glob / Grep / 代码搜索经常返回空：这不代表文件不存在。
+`PRIVATE/` 在 `.gitignore` 中。Glob / Grep / 代码搜索可能返回空：这不代表文件不存在，直接按路径读取。
 
-1. `mkdir -p /home/phrolova/CodeProject/async-forge/PRIVATE/面试`
-2. 用 Read 工具读简历绝对路径
-3. Read 失败则 Shell：`cat "/home/phrolova/CodeProject/async-forge/PRIVATE/简历描述.md"`
-4. 仍失败则停，告诉用户补文件，不要凭 P2 交付归档里的旧简历稿编造
+1. 确保输出目录存在：`mkdir -p PRIVATE/面试`（在仓库根执行）
+2. 读取 `PRIVATE/简历描述.md`（工具要求绝对路径时，用仓库根拼接）
+3. 读取失败则停，告诉用户补文件，不要凭 P2 交付归档里的旧简历稿编造
 
 已有 `PRIVATE/面试/*.md` 时先读再改，避免覆盖用户手改。
 
