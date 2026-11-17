@@ -18,7 +18,7 @@ function onLogout() {
 </script>
 
 <template>
-  <div class="app-shell">
+  <div>
     <AuthView v-if="!session" @authenticated="onAuthenticated" />
     <ConsoleView v-else :session="session" @logout="onLogout" />
   </div>

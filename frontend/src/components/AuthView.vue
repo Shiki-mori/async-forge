@@ -40,54 +40,57 @@ async function submit() {
 
 <template>
   <section class="auth">
-    <header class="auth__brand">
-      <p class="eyebrow">Async Forge</p>
-      <h1>{{ mode === 'login' ? '登录控制台' : '注册账号' }}</h1>
-      <p class="lede">提交任务、观察状态流转与重试死信。</p>
-    </header>
+    <div class="auth__card">
+      <div class="auth__brand">
+        <span class="logo" aria-hidden="true">AF</span>
+        <span>async-forge</span>
+      </div>
+      <h1>{{ mode === 'login' ? '登录' : '注册账号' }}</h1>
+      <p class="auth__hint">异步任务平台 · 任务控制台</p>
 
-    <form class="auth__form" @submit.prevent="submit">
-      <label>
-        <span>用户名</span>
-        <input
-          v-model="username"
-          type="text"
-          autocomplete="username"
-          minlength="3"
-          maxlength="64"
-          required
-          placeholder="3–64 字符"
-        />
-      </label>
-      <label>
-        <span>密码</span>
-        <input
-          v-model="password"
-          type="password"
-          autocomplete="current-password"
-          minlength="6"
-          maxlength="64"
-          required
-          placeholder="至少 6 位"
-        />
-      </label>
+      <form class="auth__form" @submit.prevent="submit">
+        <label>
+          <span>用户名</span>
+          <input
+            v-model="username"
+            type="text"
+            autocomplete="username"
+            minlength="3"
+            maxlength="64"
+            required
+            placeholder="3–64 个字符"
+          />
+        </label>
+        <label>
+          <span>密码</span>
+          <input
+            v-model="password"
+            type="password"
+            :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+            minlength="6"
+            maxlength="64"
+            required
+            placeholder="至少 6 位"
+          />
+        </label>
 
-      <p v-if="error" class="form-error" role="alert">{{ error }}</p>
+        <p v-if="error" class="form-error" role="alert">{{ error }}</p>
 
-      <button type="submit" class="btn btn--primary" :disabled="loading">
-        {{ loading ? '提交中…' : mode === 'login' ? '登录' : '注册并登录' }}
-      </button>
-    </form>
+        <button type="submit" class="btn btn--primary" :disabled="loading">
+          {{ loading ? '提交中…' : mode === 'login' ? '登录' : '注册并登录' }}
+        </button>
+      </form>
 
-    <p class="auth__switch">
-      <template v-if="mode === 'login'">
-        没有账号？
-        <button type="button" class="link" @click="mode = 'register'">去注册</button>
-      </template>
-      <template v-else>
-        已有账号？
-        <button type="button" class="link" @click="mode = 'login'">去登录</button>
-      </template>
-    </p>
+      <p class="auth__switch">
+        <template v-if="mode === 'login'">
+          没有账号？
+          <button type="button" class="link" @click="mode = 'register'">注册</button>
+        </template>
+        <template v-else>
+          已有账号？
+          <button type="button" class="link" @click="mode = 'login'">登录</button>
+        </template>
+      </p>
+    </div>
   </section>
 </template>

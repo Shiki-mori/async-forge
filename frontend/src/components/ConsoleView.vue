@@ -144,20 +144,24 @@ onUnmounted(() => {
 <template>
   <div class="console">
     <header class="topbar">
-      <div>
-        <p class="eyebrow">Async Forge</p>
-        <h1>任务控制台</h1>
+      <div class="topbar__brand">
+        <span class="logo" aria-hidden="true">AF</span>
+        <span>async-forge</span>
+        <span class="topbar__sep">/</span>
+        <span class="topbar__page">任务控制台</span>
       </div>
       <div class="topbar__user">
         <span>{{ props.session.username }}</span>
-        <button type="button" class="btn btn--ghost" @click="emit('logout')">退出</button>
+        <button type="button" class="btn btn--ghost btn--sm" @click="emit('logout')">退出</button>
       </div>
     </header>
 
     <div class="console__grid">
       <section class="panel">
-        <h2>创建任务</h2>
-        <form class="create-form" @submit.prevent="submitTask">
+        <div class="panel__head">
+          <h2>新建任务</h2>
+        </div>
+        <form class="create-form panel__body" @submit.prevent="submitTask">
           <label>
             <span>任务类型</span>
             <select v-model="taskType">
@@ -180,9 +184,10 @@ onUnmounted(() => {
 
           <template v-else-if="taskType === 'HTTP_CALL'">
             <label>
-              <span>URL（仅 GET）</span>
+              <span>URL</span>
               <input v-model="httpUrl" type="url" required placeholder="https://..." />
             </label>
+            <p class="field-hint">仅支持 GET 请求。</p>
           </template>
 
           <template v-else>
@@ -199,63 +204,82 @@ onUnmounted(() => {
           <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
 
           <button type="submit" class="btn btn--primary" :disabled="creating">
-            {{ creating ? '提交中…' : '提交到队列' }}
+            {{ creating ? '提交中…' : '提交' }}
           </button>
         </form>
       </section>
 
       <section class="panel panel--list">
         <div class="panel__head">
-          <h2>我的任务</h2>
-          <button type="button" class="btn btn--ghost" :disabled="loadingList" @click="refreshList">
+          <h2>任务列表<span v-if="tasks.length" class="panel__count">{{ tasks.length }}</span></h2>
+          <button
+            type="button"
+            class="btn btn--ghost btn--sm"
+            :disabled="loadingList"
+            @click="refreshList"
+          >
             刷新
           </button>
         </div>
-        <p v-if="listError" class="form-error">{{ listError }}</p>
-        <p v-else-if="!tasks.length" class="muted">暂无任务，先提交一个试试。</p>
-        <ul v-else class="task-list">
-          <li
-            v-for="task in tasks"
-            :key="task.id"
-            :class="{ 'is-active': selectedId === task.id }"
-          >
-            <button type="button" class="task-row" @click="selectTask(task.id)">
-              <span class="task-row__id">#{{ task.id }}</span>
-              <span class="task-row__type">{{ task.taskType }}</span>
-              <span :class="statusClass(task.status)">{{ task.status }}</span>
-              <span class="task-row__meta">重试 {{ task.retryCount }}/{{ task.maxRetry }}</span>
-            </button>
-          </li>
-        </ul>
+        <div class="panel__body panel__body--flush">
+          <p v-if="listError" class="form-error">{{ listError }}</p>
+          <p v-else-if="!tasks.length" class="panel__empty">还没有任务。</p>
+          <div v-else class="task-table__scroll">
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>类型</th>
+                  <th>状态</th>
+                  <th class="num">重试</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="task in tasks"
+                  :key="task.id"
+                  :class="{ 'is-active': selectedId === task.id }"
+                  tabindex="0"
+                  @click="selectTask(task.id)"
+                  @keydown.enter="selectTask(task.id)"
+                >
+                  <td class="id">#{{ task.id }}</td>
+                  <td class="mono">{{ task.taskType }}</td>
+                  <td><span :class="statusClass(task.status)">{{ task.status }}</span></td>
+                  <td class="num">{{ task.retryCount }}/{{ task.maxRetry }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section class="panel panel--detail">
-        <h2>任务详情</h2>
-        <template v-if="selected">
+        <div class="panel__head">
+          <h2>{{ selected ? `任务 #${selected.id}` : '任务详情' }}</h2>
+          <span v-if="selected" :class="statusClass(selected.status)">{{ selected.status }}</span>
+        </div>
+        <div v-if="selected" class="panel__body">
           <dl class="detail">
             <div>
-              <dt>ID</dt>
-              <dd>{{ selected.id }}</dd>
-            </div>
-            <div>
               <dt>类型</dt>
-              <dd>{{ selected.taskType }}</dd>
+              <dd class="mono">{{ selected.taskType }}</dd>
             </div>
             <div>
-              <dt>状态</dt>
-              <dd><span :class="statusClass(selected.status)">{{ selected.status }}</span></dd>
-            </div>
-            <div>
-              <dt>重试</dt>
+              <dt>重试次数</dt>
               <dd>{{ selected.retryCount }} / {{ selected.maxRetry }}</dd>
             </div>
             <div>
-              <dt>创建</dt>
-              <dd>{{ formatTime(selected.createdAt) }}</dd>
+              <dt>ID</dt>
+              <dd class="mono">{{ selected.id }}</dd>
             </div>
             <div>
-              <dt>更新</dt>
-              <dd>{{ formatTime(selected.updatedAt) }}</dd>
+              <dt>创建时间</dt>
+              <dd class="mono">{{ formatTime(selected.createdAt) }}</dd>
+            </div>
+            <div>
+              <dt>更新时间</dt>
+              <dd class="mono">{{ formatTime(selected.updatedAt) }}</dd>
             </div>
           </dl>
 
@@ -271,8 +295,8 @@ onUnmounted(() => {
             <h3>Error</h3>
             <pre>{{ selected.errorMessage }}</pre>
           </div>
-        </template>
-        <p v-else class="muted">从左侧列表选择一个任务。</p>
+        </div>
+        <p v-else class="panel__empty">在任务列表中选择一项查看详情。</p>
       </section>
     </div>
   </div>
