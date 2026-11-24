@@ -53,12 +53,18 @@ public class TaskProducer {
         });
     }
 
-    private void afterCommit(Runnable action) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                action.run();
-            }
-        });
+    // 将一段操作登记到当前数据库事务上，等事务提交成功后再执行
+    // 两个 afterCommit 同名但不同:
+    // 外层是 TaskProducer 自己的方法，负责登记；
+    // 内层是 Spring 回调接口的方法，负责执行。
+    private void afterCommit(Runnable action) {          // action：提交后要做的事
+        TransactionSynchronizationManager                // Spring 的事务同步管理器
+                .registerSynchronization(                    // 给当前线程的事务登记一个回调
+                        new TransactionSynchronization() {       // 匿名内部类，实现回调接口
+                            @Override
+                            public void afterCommit() {          // 事务提交成功后由 Spring 调用
+                                action.run();                    // 这时才真正执行
+                            }
+                        });
     }
 }

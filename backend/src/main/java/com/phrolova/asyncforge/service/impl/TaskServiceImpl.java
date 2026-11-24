@@ -60,6 +60,7 @@ public class TaskServiceImpl implements TaskService {
         // 立即返回taskId，HTTP不等待执行完成
         // Spring 随后提交事务，并调用 afterCommit 方法
         taskProducer.publishAfterCommit(task.getId());
+        // 返回任务响应
         return toResponse(task);
     }
 

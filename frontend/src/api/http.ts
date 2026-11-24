@@ -21,9 +21,11 @@ export async function request<T>(
 
   const token = getToken()
   if (token) {
+    // 给请求加上 Authorization:Bearer<token>
     headers.set('Authorization', `Bearer ${token}`)
   }
 
+  // fetch 发出请求
   const response = await fetch(path, { ...options, headers })
 
   let body: ApiResult<T> | null = null

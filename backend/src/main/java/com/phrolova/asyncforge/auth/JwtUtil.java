@@ -36,7 +36,7 @@ public class JwtUtil {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(token)   // 解析token时会验证签名与过期时间，不通过则抛出异常
                 .getPayload();
     }
 
