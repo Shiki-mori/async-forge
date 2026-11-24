@@ -37,10 +37,9 @@ const hasActive = computed(() =>
 )
 
 async function refreshList() {
-  loadingList.value = true
-  listError.value = ''
   try {
     tasks.value = await listTasks()
+    listError.value = ''
     if (selectedId.value != null) {
       const found = tasks.value.find((t) => t.id === selectedId.value)
       if (found) selected.value = found
@@ -50,6 +49,14 @@ async function refreshList() {
     if (e instanceof ApiError && e.code === 40100) {
       emit('logout')
     }
+  }
+}
+
+// 加载状态只由手动刷新控制，避免轮询时按钮反复禁用而闪烁
+async function manualRefresh() {
+  loadingList.value = true
+  try {
+    await refreshList()
   } finally {
     loadingList.value = false
   }
@@ -216,7 +223,7 @@ onUnmounted(() => {
             type="button"
             class="btn btn--ghost btn--sm"
             :disabled="loadingList"
-            @click="refreshList"
+            @click="manualRefresh"
           >
             刷新
           </button>
