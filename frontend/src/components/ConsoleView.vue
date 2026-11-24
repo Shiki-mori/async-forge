@@ -31,21 +31,35 @@ const httpUrl = ref('https://httpbin.org/get')
 const instruction = ref(DEFAULT_AGENT_INSTRUCTION)
 const forceFail = ref(false)
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const POLL_INTERVAL_MS = 1000
+const POLL_MAX_INTERVAL_MS = 30000
+
+let pollTimer: ReturnType<typeof setTimeout> | null = null
+let polling = false
+let disposed = false
+let failureCount = 0
+let refreshSeq = 0
 
 const hasActive = computed(() =>
   tasks.value.some((t) => t.status === 'PENDING' || t.status === 'RUNNING' || t.status === 'FAILED'),
 )
 
 async function refreshList() {
+  const seq = ++refreshSeq
   try {
-    tasks.value = await listTasks()
+    const list = await listTasks()
+    // 手动刷新与轮询可能并发，只采用最后一次发起的请求，避免旧响应覆盖新状态
+    if (disposed || seq !== refreshSeq) return
+    failureCount = 0
+    tasks.value = list
     listError.value = ''
     if (selectedId.value != null) {
       const found = tasks.value.find((t) => t.id === selectedId.value)
       if (found) selected.value = found
     }
   } catch (e) {
+    if (disposed || seq !== refreshSeq) return
+    failureCount++
     listError.value = e instanceof ApiError ? e.message : '加载任务列表失败'
     if (e instanceof ApiError && e.code === 40100) {
       emit('logout')
@@ -60,6 +74,7 @@ async function manualRefresh() {
     await refreshList()
   } finally {
     loadingList.value = false
+    schedulePoll()
   }
 }
 
@@ -118,34 +133,58 @@ function formatTime(value: string) {
   return value.replace('T', ' ').slice(0, 19)
 }
 
-function syncPoll() {
+function clearPollTimer() {
   if (pollTimer) {
-    clearInterval(pollTimer)
+    clearTimeout(pollTimer)
     pollTimer = null
-  }
-  if (hasActive.value) {
-    pollTimer = setInterval(async () => {
-      await refreshList()
-      if (selectedId.value != null) {
-        try {
-          selected.value = await getTask(selectedId.value)
-        } catch {
-          /* ignore transient poll errors */
-        }
-      }
-    }, 500)
   }
 }
 
-watch(hasActive, syncPoll)
+function canPoll() {
+  return !disposed && !polling && hasActive.value && !document.hidden
+}
+
+// 上一次请求结束后才安排下一次；连续失败时间隔翻倍，成功后恢复
+function schedulePoll() {
+  clearPollTimer()
+  if (!canPoll()) return
+  const delay = Math.min(POLL_INTERVAL_MS * 2 ** failureCount, POLL_MAX_INTERVAL_MS)
+  pollTimer = setTimeout(poll, delay)
+}
+
+async function poll() {
+  clearPollTimer()
+  if (!canPoll()) return
+  polling = true
+  try {
+    await refreshList()
+  } finally {
+    polling = false
+    schedulePoll()
+  }
+}
+
+// 页面不可见时暂停，恢复可见时立即刷新一次
+function onVisibilityChange() {
+  if (document.hidden) {
+    clearPollTimer()
+  } else {
+    void poll()
+  }
+}
+
+watch(hasActive, schedulePoll)
 
 onMounted(async () => {
+  document.addEventListener('visibilitychange', onVisibilityChange)
   await refreshList()
-  syncPoll()
+  schedulePoll()
 })
 
 onUnmounted(() => {
-  if (pollTimer) clearInterval(pollTimer)
+  disposed = true
+  clearPollTimer()
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>
 
