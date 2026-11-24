@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ApiError } from '../api/http'
 import { createTask, getTask, listTasks } from '../api/tasks'
 import type { AuthSession, TaskResponse, TaskType } from '../types'
+import ThemeToggle from './ThemeToggle.vue'
 
 const props = defineProps<{
   session: AuthSession
@@ -159,6 +160,7 @@ onUnmounted(() => {
       </div>
       <div class="topbar__user">
         <span>{{ props.session.username }}</span>
+        <ThemeToggle />
         <button type="button" class="btn btn--ghost btn--sm" @click="emit('logout')">退出</button>
       </div>
     </header>

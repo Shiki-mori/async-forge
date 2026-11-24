@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 首屏渲染前确定主题，避免深色模式刷新时闪白；key 与 src/theme.ts 一致
+      ;(function () {
+        var saved = null
+        try {
+          saved = localStorage.getItem('async-forge.theme')
+        } catch (e) {}
+        var dark =
+          saved === 'dark' ||
+          (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+    </script>
     <title>async-forge 任务控制台</title>
   </head>
   <body>

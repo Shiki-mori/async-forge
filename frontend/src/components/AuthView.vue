@@ -4,6 +4,7 @@ import { login, register } from '../api/auth'
 import { ApiError } from '../api/http'
 import { saveSession } from '../auth/session'
 import type { AuthSession } from '../types'
+import ThemeToggle from './ThemeToggle.vue'
 
 const emit = defineEmits<{
   authenticated: [session: AuthSession]
@@ -44,6 +45,7 @@ async function submit() {
       <div class="auth__brand">
         <span class="logo" aria-hidden="true">AF</span>
         <span>async-forge</span>
+        <ThemeToggle class="auth__theme" />
       </div>
       <h1>{{ mode === 'login' ? '登录' : '注册账号' }}</h1>
       <p class="auth__hint">异步任务平台 · 任务控制台</p>
