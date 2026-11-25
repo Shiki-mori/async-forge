@@ -47,6 +47,11 @@ async-forge 是校招作品集里的**异步任务平台**（提交 → RabbitMQ
 - 前端控制台，或修改 `frontend/` 下的 TypeScript / Vue：[.claude/rules/frontend-console.md](.claude/rules/frontend-console.md)
 - 部署、Compose、数据库、密钥、环境变量、Dockerfile、gitignore，或修改 `README.md`：[.claude/rules/compose-secrets.md](.claude/rules/compose-secrets.md)
 
+### 结论与依据
+
+- 描述本项目的运行行为（SQL、锁、事务、MQ、并发、异常路径）前，先读完相关调用链的代码，并给出 `文件:行号`；没读过的不下结论。
+- 涉及框架、数据库、中间件的行为时，按本项目实际的语句、配置和版本判断，不直接套用通用结论。
+
 ### 改完验证
 
 按改动范围运行，失败时报告输出，不要跳过：
