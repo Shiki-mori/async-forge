@@ -42,6 +42,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional // 该方法需要在数据库事务中执行
     // Spring 会自动开启一个数据库事务，并在事务提交后执行 afterCommit 方法
+    // 事务提交时间节点：createTask返回之后
     public TaskResponse createTask(CreateTaskRequest request) {
         validateTaskType(request.getTaskType());
         if (TaskType.AGENT_TASK.name().equals(request.getTaskType())) {
@@ -55,12 +56,12 @@ public class TaskServiceImpl implements TaskService {
         task.setStatus(TaskStatus.PENDING.name());
         task.setRetryCount(0);
         task.setMaxRetry(taskProperties.getMaxRetry());
+        // 插入后，id 作为主键被 MyBatis-Plus 回填，此后作为 taskId
         taskMapper.insert(task);
 
-        // 立即返回taskId，HTTP不等待执行完成
-        // Spring 随后提交事务，并调用 afterCommit 方法
+        // 登记回调：事务提交后才投递MQ消息，此处尚未投递
         taskProducer.publishAfterCommit(task.getId());
-        // 返回任务响应
+        // 封装任务响应，返回后 Spring 提交事务并触发回调
         return toResponse(task);
     }
 
@@ -147,7 +148,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     /**
-     * 将任务转换为任务响应
+     * 将数据库实体 Task 转换为任务响应 TaskResponse
      * @param task 任务
      * @return 任务响应
      */

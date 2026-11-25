@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+// @RestController = @Controller + @ResponseBody
+// @ResponseBody: 返回值就是响应体的内容
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor

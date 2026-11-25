@@ -16,6 +16,7 @@ public class TaskProducer {
     private final RabbitTemplate rabbitTemplate;
     private final MqProperties mqProperties;
 
+    // 向 mq 投递消息
     public void publish(Long taskId) {
         TaskMessage message = new TaskMessage(taskId);
         /*
@@ -38,6 +39,15 @@ public class TaskProducer {
      */
     public void publishAfterCommit(Long taskId) {
         afterCommit(() -> publish(taskId));
+        // Lambda 表达式，等价于：
+
+        // Runnable action = new Runnable() {
+        //     @Override
+        //     public void run() {
+        //         publish(taskId);
+        //     }
+        // };
+        // afterCommit(action);
     }
 
     public void publishRetryAfterCommit(Long taskId, int retryCount) {
