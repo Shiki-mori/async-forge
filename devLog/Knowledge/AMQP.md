@@ -68,6 +68,44 @@ basicAck / basicNack  →  未 ACK 数减 1，Broker 才会再推下一条
 
 注意区分：prefetch 是 MQ 层的消息投递，发生在 `consume()` 被调用**之前**；`claimForExecution` 是业务层在数据库里抢占任务状态，发生在 `execute()` 内部，属于消费阶段。
 
+## 补充：为什么 taskId 放消息体、重试次数放消息头
+
+AMQP 消息分两部分：**body**（业务载荷，字节流，本项目用 `Jackson2JsonMessageConverter` 序列化成 JSON）和 **properties / headers**（投递元数据，键值对，Broker 和客户端不用解析 body 就能读到）。
+
+本项目的划分：
+
+| 位置 | 内容 | 代码 |
+| --- | --- | --- |
+| body | `TaskMessage { taskId }` | `mq/TaskMessage.java` |
+| header | `task-retry-count`（只有重试消息带） | 写：`mq/TaskProducer.java:59`；读：`mq/TaskConsumer.java:33` |
+
+> 提交 `332df6e` 引入这个消息头时没有写明理由，下面的理由是根据现有代码整理出来的。
+
+### 理由
+
+1. **语义分层：body 说明"是哪个任务"，header 说明"这是第几次投递"。** 同一个任务的首次消息、2s 重试消息、8s 重试消息，body 完全相同，都是 `new TaskMessage(taskId)`，区别只在投递属性上。所以 `TaskConsumer` 和 `DlqListener` 能用同一个 `TaskMessage` 类型反序列化。`DlqListener.onDeadLetter` 根本不读这个消息头，直接查库判断状态。
+2. **数据库才是事实来源，消息只当"抢占凭据"。** 任务的真实 `retry_count` 存在 `task` 表里，由 `handleFailure` 累加。消息头里的值只用来和数据库比对（`mapper/TaskMapper.java:17-18`），相当于乐观锁的期望版本号，消费者不会拿它当执行依据。把它放进 header，就表明它属于这一次投递，不是任务数据的一部分。body 只放 `taskId` 一个字段，Worker 必须回库读最新状态，不会因为消息里带了旧的任务快照而误用过期数据。
+3. **"没有这个头"本身就是一种状态。** 首次投递走 `publish(taskId)`，不设消息头，消费者读到 `null`（`required = false`），只能抢占 `PENDING`。这同时兼容了引入重试机制之前就已经在队列里的旧消息，它们不需要迁移。
+4. **在 Broker 侧可观测。** 在管理界面"Get messages"查看延迟队列时，消息头直接显示，不用解析 JSON 就能看出这条消息是第几次重试。消息从 TTL 队列到期、经死信转发回执行队列时，RabbitMQ 会保留原来的 headers，再追加 `x-death`，所以消息头能一路带回 Worker。
+
+### 说实话：哪些理由站不住
+
+- "兼容旧消息"不是 header 独有的优势。如果在 `TaskMessage` 里加一个 `Integer retryCount` 字段，Jackson 遇到旧 JSON 里缺这个字段也会给 `null`，效果一样。
+- TTL 死信转发同样会原样保留 body。所以这两点只能说明 header **可行**，不能说明它**更好**。真正有区分度的是第 1、2 点的语义划分。
+
+### 代价
+
+- 消息头不在 `TaskMessage` 的类型里，编译器检查不到。生产者如果忘了设置这个头，重试消息会被当作首次消息，因为任务是 `FAILED`，抢不到，于是被跳过，任务一直停在 `FAILED`。两端都引用 `TaskMessage.RETRY_COUNT_HEADER` 常量，至少避免了键名拼错。
+- 消费端要多一个 `@Header(..., required = false) Integer` 参数，并且要处理 `null`。
+
+### 为什么不用 RabbitMQ 自带的 `x-death` 计数
+
+`x-death` 按"队列 + 死信原因"分别计数。本项目的重试先经过 `task.retry.2s.q`，再经过 `task.retry.8s.q`，两条队列各算各的，要加起来才是总次数。而且它反映的是消息被死信转发了几次，不是业务上失败了几次，和数据库的 `retry_count` 不一定一致。自己维护一个消息头，语义上和 `retry_count` 一一对应。
+
+### 面试版
+
+> body 只放 `taskId`，代表任务身份；重试次数是这次投递的元数据，放在 header。数据库的 `retry_count` 才是权威值，header 只当抢占时比对的期望版本号；没有 header 就代表首次投递，只能抢占 `PENDING`。代价是 header 不受类型约束，所以两端共用一个常量。没用 `x-death`，是因为它按队列分别计数，和业务重试次数对不上。
+
 ## 几个容易混的点
 
 - **版本**：RabbitMQ 主要实现的是 **AMQP 0-9-1**。另外还有一个 AMQP 1.0，模型差别很大（比如没有 Exchange 这个概念），两者基本算两套协议。平时说"RabbitMQ 用 AMQP"，指的都是 0-9-1。
