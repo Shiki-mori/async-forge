@@ -92,8 +92,24 @@ public class RabbitMqConfig {
                 .with(mqProperties.getDlqRoutingKey());
     }
 
+    /*
+    消息转换器，将消息转换为JSON格式
+
+    调用链（项目代码中没有直接调用，由 Spring 容器按类型注入）：
+    1. 启动时：容器反射调用本 @Bean 方法创建单例，ObjectMapper 来自 Boot 的 JacksonAutoConfiguration
+    2. Boot 自动配置通过 ObjectProvider<MessageConverter>.getIfUnique() 取到本 Bean，装配到两处：
+       - RabbitTemplateConfigurer.configure() -> RabbitTemplate.setMessageConverter()
+       - AbstractRabbitListenerContainerFactoryConfigurer.configure() -> 监听容器工厂.setMessageConverter()
+    3. 发送：TaskProducer.publish() -> rabbitTemplate.convertAndSend() -> toMessage()，
+       TaskMessage 序列化为 JSON，content_type=application/json
+    4. 消费：监听容器 -> MessagingMessageListenerAdapter -> fromMessage()，
+       按方法参数类型反序列化为 TaskMessage，再传给 TaskConsumer.consume() / DlqListener.onDeadLetter()
+
+    注意：getIfUnique() 只在 MessageConverter Bean 唯一时生效。删掉本 Bean 或再加一个，
+    都会退回 Spring AMQP 默认的 SimpleMessageConverter。它只支持 byte[]、String、Serializable，
+    TaskMessage 没有实现 Serializable，发送时会抛 IllegalArgumentException。
+    */
     @Bean
-    // 消息转换器，将消息转换为JSON格式
     public MessageConverter jacksonMessageConverter(ObjectMapper objectMapper) {
         return new Jackson2JsonMessageConverter(objectMapper);
     }
