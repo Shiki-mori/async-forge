@@ -31,6 +31,9 @@ public class TaskController {
      */
     @PostMapping
     public Result<TaskResponse> createTask(@Valid @RequestBody CreateTaskRequest request) {
+        // 此处的 taskService 是 Spring 生成的事务代理
+        // TaskServiceImpl.createTask 返回后，事务代理再将返回结果交还到 Controller
+        // 代理的 return 发生在事务提交后的回调完成之后
         return Result.success(taskService.createTask(request));
     }
 
